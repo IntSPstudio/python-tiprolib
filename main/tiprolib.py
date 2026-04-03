@@ -1,22 +1,22 @@
 #|==============================================================|#
 # Made by IntSPstudio
 # Thank you for using this plugin!
-# Version: 0.0.1.110304
+# Version: 0.0.1.110304b
 # ID: 980001022
 #|==============================================================|#
 
 #IMPORT
 import sqlite3
 import json
-import sys
-from os import get_terminal_size as cli_size
-import random
-import re
+from random import randint
+from re import sub as resub
 from datetime import datetime
+import sys  #For ' if __name__ == "__main__" '
+from os import get_terminal_size as cli_size #For ' if __name__ == "__main__" '
+
 #SETTINGS
 log =[]
 results ={}
-demo =1
 
 #START THINGS
 def initialize(db_path="products.db"):
@@ -77,7 +77,7 @@ def boring_text(input, mode):
     if mode == 0:
         return str("").join(i for i in input if i.isalnum())
     elif mode == 1:
-        return re.sub(r"[^a-zA-Z0-9_-.,!# ]", "", input)
+        return resub(r"[^a-zA-Z0-9_-.,!# ]", "", input)
     
 #DEFAULT COMMAND LINE TABLE PRINT
 def print_table(headers, rows):
@@ -89,23 +89,12 @@ def print_table(headers, rows):
         line = "=] "+ " | ".join(str(row[i]).ljust(widths[i]) for i in range(len(row)))
         line = line.replace("None", "    ")
         output.append(line)
-    #PRINT / RETURN
-    if demo == 1:
-        print("=]")
-        for i in output:
-            #CHECK SCREEN SIZE
-            max_width = cli_size().columns
-            if len(i) > max_width:
-                i = i[:max_width]
-            print(i)
-        print("=]")
-    else:
-        return output
+    return output
 #IF GTIN = EMPTY -> GENERETED CODE
 def generate_internal_gtin(conn):
     cursor = conn.cursor()
     while True: #CHECK FOR NEW ID
-        code = str(random.randint(1000000000, 9999999999))
+        code = str(randint(1000000000, 9999999999))
         cursor.execute("SELECT gtin FROM products WHERE gtin=?", (code,))
         if not cursor.fetchone():
             return code
@@ -167,7 +156,7 @@ def update_product(conn, gtin, **fields):
     allowed_fields = {
         "gtin_type", "code", "brand", "manufacturer", "name",
         "qty_value", "qty_default", "qty_unit", "info", "note",
-        "madein", "additionalinfo", "status"
+        "madein", "additionalinfo", "status", "category"
     }
     updates = []
     values = []
@@ -245,7 +234,7 @@ def get_product(conn, gtin, field =""):
         allowed_fields = {
             "gtin_type", "code", "brand", "manufacturer", "name",
             "qty_value", "qty_default", "qty_unit", "info", "note",
-            "madein", "additionalinfo", "status"
+            "madein", "additionalinfo", "status", "category"
         }
         field = field_alias.get(field, field)
         if field not in allowed_fields:
@@ -342,6 +331,19 @@ def add_additional(conn, pid):
     output = "Additional info updated to ID:" + str(pid)
     logger(output)
 
+#!
+#if this is used only like plugin, these will not be needed from now on \/
+#!
+#CLI PRINT WITH SCREEN LIMIT
+def printer(text):
+    try:
+        limit = cli_size().columns #SCREEN SIZE
+        if len(text) > limit:
+            print(text[:limit])
+        else:
+            print(text)
+    except Exception as e:
+        print(f"Error printing object: {e}")
 #IF THIS PLUGIN IS STARTED LIKE SOFTWARE
 if __name__ == "__main__":
     #TA
@@ -351,18 +353,18 @@ if __name__ == "__main__":
     #TB
     try:
         if len(sys.argv) < 2:
-            print("=]")
-            print("=]            *** Welcome! Available commands ***")
-            print("=]")
-            print("=]  create                  | Create product to database")
-            print("=]  products                | Show all products from database")
-            print("=]  update GTIN FIELD VALUE | Update product field value")
-            print("=]  status ID               | Change product status (Active / passive)")
-            print("=]  get GTIN VALUE          | Get product data. If value is empty show all")
-            print("=]  extra ID                | Add additional info")
-            print("=]  price add GTIN VALUE    | Add price history")
-            print("=]  price history GTIN      | Show price history")
-            print("=]")
+            printer("=]")
+            printer("=]            *** Welcome! Available commands ***")
+            printer("=]")
+            printer("=]  create                  | Create product to database")
+            printer("=]  products                | Show all products from database")
+            printer("=]  update GTIN FIELD VALUE | Update product field value")
+            printer("=]  status ID               | Change product status (Active / passive)")
+            printer("=]  get GTIN VALUE          | Get product data. If value is empty show all")
+            printer("=]  extra ID                | Add additional info")
+            printer("=]  price add GTIN VALUE    | Add price history")
+            printer("=]  price history GTIN      | Show price history")
+            printer("=]")
             conn.close()
             sys.exit()
         cmd = sys.argv[1]
@@ -389,7 +391,7 @@ if __name__ == "__main__":
             filtered_rows = []
             for row in rows:
                 filtered_rows.append([row[i] for i in indices])
-            print_table(filtered_headers, filtered_rows)
+            results = print_table(filtered_headers, filtered_rows)
         elif cmd == "get":
             if len(sys.argv) == 3:
                 results = get_product(conn, sys.argv[2])
@@ -404,36 +406,43 @@ if __name__ == "__main__":
             status_product(conn, sys.argv[2])
         elif cmd == "price":
             if len(sys.argv) < 3:
-                print("=] Options: ADD or HISTORY")
+                printer("=] Options: ADD or HISTORY")
             else:
                 if sys.argv[2] == "add":
                     add_price(conn, sys.argv[3], sys.argv[4])
                 elif sys.argv[2] == "history":
 
                     headers, rows =  price_history(conn, sys.argv[3])
-                    print_table(headers, rows)
+                    results = print_table(headers, rows)
         elif cmd == "extra":
             add_additional(conn, sys.argv[2])
         elif cmd == "help":
             if sys.argv[2] == "get" or sys.argv[2] == "update":
-                print("=]")
-                print("=]            *** OPTIONS ***")
-                print("=]")
-                print("=] gtin_type, code, brand, manufacturer, name, ")
-                print("=] qty_value (or qty), qty_default (or qtyd), qty_unit (or qtu)")
-                print("=] info, note, madein, status, updated, additionalinfo")
-                print("=]")
+                printer("=]")
+                printer("=]            *** OPTIONS ***")
+                printer("=]")
+                printer("=] gtin_type, code, brand, manufacturer, name, category (or cat), ")
+                printer("=] qty_value (or qty), qty_default (or qtyd), qty_unit (or qtu)")
+                printer("=] info, note, madein, status, updated, additionalinfo")
+                printer("=]")
         #TC
         print()
-        if len(results) > 0:
-            print("Results:")
-            for key, value in results.items():
-                print(f"{key}: {value}")
+        if results:
+            printer("Results:")
+            if isinstance(results, list):
+                    for i in results:
+                        printer(i)
+            elif isinstance(results, dict):
+                for key, value in results.items():
+                    printer(f"{key}: {value}")
+            else:
+                printer(results)
             print()
-        print("Logger:")
         logger("Stop")
-        for i in log:
-            print(i)
+        if logger:
+            printer("Logger:")
+            for i in log:
+                printer(i)
         conn.close()
     except:
         conn.close()
