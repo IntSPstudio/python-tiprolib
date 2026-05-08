@@ -1,7 +1,7 @@
 #|==============================================================|#
 # Made by IntSPstudio
 # Thank you for using this plugin!
-# Version: 0.0.1.110304b
+# Version: 0.0.1.110805
 # ID: 980001022
 #|==============================================================|#
 
@@ -9,7 +9,7 @@
 import sqlite3
 import json
 from random import randint
-from re import sub as resub
+import re
 from datetime import datetime
 import sys  #For ' if __name__ == "__main__" '
 from os import get_terminal_size as cli_size #For ' if __name__ == "__main__" '
@@ -18,10 +18,29 @@ from os import get_terminal_size as cli_size #For ' if __name__ == "__main__" '
 log =[]
 results ={}
 
+#
+ALLOWED_TABLES = [
+    "products", 
+    "price_history"
+]
+FIELD_ALIAS = {
+    "qty": "qty_value",
+    "qtyu": "qty_unit",
+    "qtyd": "qty_default",
+    "cat": "category"
+}
+ALLOWED_FIELDS = {
+    "products" : {
+        "gtin", "gtin_type", "code", "brand", "manufacturer", "name",
+        "qty_value", "qty_default", "qty_unit", "info", "note",
+        "madein", "additionalinfo", "status", "category"
+    }
+}
+
+ALLOWED_FIELDS_PRODUCTS = ALLOWED_FIELDS["products"]
+
 #START THINGS
-def initialize(db_path="products.db"):
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+def create_database(conn):
     cursor = conn.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS products (
@@ -32,8 +51,8 @@ def initialize(db_path="products.db"):
         brand TEXT,
         manufacturer TEXT,
         name TEXT,
-        qty_value INTEGER,
-        qty_default INTEGER,
+        qty_value REAL,
+        qty_default REAL,
         qty_unit TEXT,
         category TEXT,
         info TEXT,
@@ -56,6 +75,10 @@ def initialize(db_path="products.db"):
     )
     """)
     conn.commit()
+def initialize(db_path="products.db"):
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    #cursor = conn.cursor()
     return conn
 
 #DEFAULT TYPE FOR DATE AND TIME
@@ -77,8 +100,15 @@ def boring_text(input, mode):
     if mode == 0:
         return str("").join(i for i in input if i.isalnum())
     elif mode == 1:
-        return resub(r"[^a-zA-Z0-9_-.,!# ]", "", input)
-    
+        return re.sub(r"[^a-zA-Z0-9_-.,!# ]", "", input)
+#SEPARATE VALUES AND UNITS
+def parse_qty_input(value):
+    match = re.match(r"^\s*(\d+(?:[.,]\d+)?)\s*([a-zA-Z]+)\s*$", value)
+    if not match:
+        raise ValueError(f"Invalid qty format: {value}")
+    qty = float(match.group(1).replace(",", "."))
+    unit = match.group(2).lower()
+    return qty, unit
 #DEFAULT COMMAND LINE TABLE PRINT
 def print_table(headers, rows):
     output =[]
@@ -101,69 +131,116 @@ def generate_internal_gtin(conn):
 #GET TABLE
 def get_table(conn, name, mode):
     cursor = conn.cursor()
-    allowed_tables = ["products", "price_history"]
     #RULES
-    if name not in allowed_tables:
-        logger("Invalid table")
-        return
+    if name not in ALLOWED_TABLES:
+        return {"error":"Invalid table"}
     cursor.execute("SELECT * FROM " + name)
     headers = [col[0] for col in cursor.description]
     rows = cursor.fetchall()
     #MORE RULES
     if not rows:
-        logger("Error")
-        return
-    return headers, rows
-
+        return {"error":"No data"}
+    output = {"title": headers, "content": rows}
+    return output
 #CREATE PRODUCT
-def create_product(conn, gtin="", gtin_type="", brand=None, name=None, additional={}):
-    cursor = conn.cursor()
+def create_product(input: dict):
     now = currentdatetime()
-
-    gtin = boring_text(gtin,0) #REMOVE UNWANTED CHARACTERS
-    gtin_type = boring_text(gtin_type,0) #REMOVE UNWANTED CHARACTERS
-
-    if not gtin: #GENERATED GTIN ID
-        gtin = generate_internal_gtin(conn)
-        gtin_type = "internal"
-        logger("Generated GTIN")
+    events =[]
+    data ={}
+    #VALIDATE + MAP INPUT
+    for field in ALLOWED_FIELDS_PRODUCTS:
+        data.setdefault(field, None)
+    for field, value in input.items():
+        try:
+            field = FIELD_ALIAS.get(field, field)
+            if field not in ALLOWED_FIELDS_PRODUCTS:
+                events.append(f"Error: field not allowed -> {field}")
+                continue
+            if isinstance(value, str):
+                value = value.strip()
+            data[field] = value
+        except ValueError as e:
+            events.append(str(e))
+    #MORE RULES
+    if not data.get("name"):
+        raise ValueError("name_required")
+    #IDENTIFIERS
+    if not data.get("gtin"):
+        data["gtin"] = generate_internal_gtin(conn)
+        data["gtin_type"] = "internal"
+        output = "Generated GTIN: "+ str(data.get("gtin_type")) +" "+ str(data.get("gtin"))
+        events.append(output)
     else:
-        gtin_type = gtin_type.lower()
-    if not gtin_type:
-        gtin_type = None
-
-    with conn:
-        cursor.execute("""
-        INSERT INTO products
-        (gtin, gtin_type, brand, name, status, created, updated, additionalinfo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (gtin, gtin_type, brand, name, "active", now, now, json.dumps(additional)))
-
-    logger(f"Product created: {gtin} {gtin_type}")
-    return gtin
+        gtin = str(data.get("gtin")).replace(" ", "")
+        data["gtin"] = boring_text(gtin,0)
+        gtin = str(data.get("gtin_type")).replace(" ", "")
+        data["gtin_type"] = boring_text(gtin,0)
+    #QUANTITY
+    raw_qty = data.get("qty_value")
+    if isinstance(raw_qty, str):
+        if not data.get("qty_unit"):
+            if not raw_qty.isnumeric():
+                qty_value, unit_symbol = parse_qty_input(raw_qty)
+                data["qty_value"] = qty_value
+                data["qty_unit"] = unit_symbol
+    #SEND
+    try:
+        with conn:
+            conn.execute("""
+            INSERT INTO products (
+                gtin, 
+                gtin_type,
+                code,
+                brand,
+                manufacturer,
+                name,
+                qty_value,
+                qty_default,
+                qty_unit,
+                category,
+                info,
+                note,
+                madein,
+                status,
+                created,
+                updated
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, 
+            (
+                str(data["gtin"]), 
+                data["gtin_type"],
+                data["code"],
+                data["brand"], 
+                data["manufacturer"],
+                data["name"], 
+                data["qty_value"],
+                data["qty_default"],
+                data["qty_unit"],
+                data["category"],
+                data["info"],
+                data["note"],
+                data["madein"],      
+                "active", 
+                now,
+                now
+            )
+        )
+        output = {"info":"Product created", "gtin": data["gtin"], "gtin_type": data["gtin_type"], "events": events}
+        return output
+    except Exception as e:
+        print("SQL ERROR:", e)
 
 #UPDATE PRODUCT FIELDS DATA
 def update_product(conn, gtin, **fields):
     cursor = conn.cursor()
     now = currentdatetime()
-    #RULES
-    field_alias = {
-        "qty": "qty_value",
-        "qtyu": "qty_unit",
-        "qtyd": "qty_default",
-        "cat": "category"
-    }
-    allowed_fields = {
-        "gtin_type", "code", "brand", "manufacturer", "name",
-        "qty_value", "qty_default", "qty_unit", "info", "note",
-        "madein", "additionalinfo", "status", "category"
-    }
     updates = []
     values = []
     #MORE RULES
     for field, value in fields.items():
-        field = field_alias.get(field, field)
-        if field not in allowed_fields:
+        field = FIELD_ALIAS.get(field, field)
+        if field not in ALLOWED_FIELDS_PRODUCTS:
             logger(f"Error: field not allowed -> {field}")
             continue
         updates.append(f"{field}=?")
@@ -224,20 +301,8 @@ def get_product(conn, gtin, field =""):
         return product
     #GET SPECIFIG DATA
     else:
-        #RULES
-        field_alias = {
-            "qty": "qty_value",
-            "qtyu": "qty_unit",
-            "qtyd": "qty_default",
-            "cat": "category"
-        }
-        allowed_fields = {
-            "gtin_type", "code", "brand", "manufacturer", "name",
-            "qty_value", "qty_default", "qty_unit", "info", "note",
-            "madein", "additionalinfo", "status", "category"
-        }
-        field = field_alias.get(field, field)
-        if field not in allowed_fields:
+        field = FIELD_ALIAS.get(field, field)
+        if field not in ALLOWED_FIELDS_PRODUCTS:
             logger(f"Error: field not allowed -> {field}")
             return
         #DATA
@@ -336,55 +401,102 @@ def add_additional(conn, pid):
 #!
 #CLI PRINT WITH SCREEN LIMIT
 def printer(text):
+    text = "=] " + str(text)
     try:
-        limit = cli_size().columns #SCREEN SIZE
+        limit = cli_size().columns -1 #SCREEN SIZE
         if len(text) > limit:
             print(text[:limit])
         else:
             print(text)
     except Exception as e:
         print(f"Error printing object: {e}")
+#CREATE PRODUCT WIZARD
+def create_product_wiz():
+    #START
+    loop =1
+    continuity =1
+    data ={}
+    printer("Add properties by writing: key = value")
+    printer("Type 'exit' to quit and 'info' for key values")
+    #ADD DATA
+    while loop == 1:
+        while continuity == 1:
+            raw_input = input("=] Add new: ")
+            if str.lower(raw_input) == "exit" or str.lower(raw_input) == "quit":
+                continuity =0
+            elif str.lower(raw_input) == "info" or str.lower(raw_input) == "help":
+                a ="=]"
+                c =0
+                d =""
+                for b in ALLOWED_FIELDS["products"]:
+                    c +=1
+                    a = a +" "+str(c)+". "+ str(b)
+                print(a)
+            else:
+                parts = raw_input.split("=", 1)
+                if len(parts) != 2:
+                    printer("Invalid format! Use: key = value")
+                    continue
+                key = parts[0].strip()
+                value = parts[1].strip()
+                data[key] = value
+        #SHOW AND CONFIRM DATA
+        if data:
+            print("=]")
+            printer("Selected data:")
+            for key, value in data.items():
+                output = str(key) +" = "+ str(value)
+                printer(output)
+            print("=]")
+            raw_input = input("=] Send it! Yes or no? (Or 'edit') ")
+            #PROCESS
+            if str.lower(raw_input) == "yes" or str.lower(raw_input) == "y":
+                #START FUNCTION
+                continuity =0
+                loop =0
+                return data
+            #EDIT
+            elif str.lower(raw_input) == "edit" or str.lower(raw_input) == "e": 
+                continuity =1
+            #STOP
+            else:
+                loop =0
+                printer("Event cancelled")
+        return "Error"
+
 #IF THIS PLUGIN IS STARTED LIKE SOFTWARE
 if __name__ == "__main__":
     #TA
     logger("Start")
     results ={}
     conn = initialize()
+    dbcheck = create_database(conn)
     #TB
     try:
         if len(sys.argv) < 2:
-            printer("=]")
-            printer("=]            *** Welcome! Available commands ***")
-            printer("=]")
-            printer("=]  create                  | Create product to database")
-            printer("=]  products                | Show all products from database")
-            printer("=]  update GTIN FIELD VALUE | Update product field value")
-            printer("=]  status ID               | Change product status (Active / passive)")
-            printer("=]  get GTIN VALUE          | Get product data. If value is empty show all")
-            printer("=]  extra ID                | Add additional info")
-            printer("=]  price add GTIN VALUE    | Add price history")
-            printer("=]  price history GTIN      | Show price history")
-            printer("=]")
+            printer("")
+            printer("            *** Welcome! Available commands ***")
+            printer("")
+            printer("create                  | Create product to database")
+            printer("products                | Show all products from database")
+            printer("update GTIN FIELD VALUE | Update product field value")
+            printer("status ID               | Change product status (Active / passive)")
+            printer("get GTIN VALUE          | Get product data. If value is empty show all")
+            printer("extra ID                | Add additional info")
+            printer("price add GTIN VALUE    | Add price history")
+            printer("price history GTIN      | Show price history")
+            printer("")
             conn.close()
             sys.exit()
         cmd = sys.argv[1]
         if cmd == "create":
-            gtin =""
-            gtin_type =""
-            brand =""
-            name =""
             if len(sys.argv) == 2:
-                gtin = input("=] Gtin: ")
-                gtin_type = input("=] Gtin type: ")
-                brand = input("=] Brand: ")
-                name = input("=] Name: ")
-            if len(sys.argv) > 2:
-                gtin = sys.argv[2]
-                if len(sys.argv) > 3:
-                    gtin_type = sys.argv[3]
-            create_product(conn, gtin, gtin_type, brand, name)
+                output = create_product_wiz()
+                results = create_product(output)
         elif cmd == "products":
-            headers, rows = get_table(conn, "products", 1)
+            results = get_table(conn, "products", 1)
+            headers = results["title"]
+            rows = results["content"]
             skip_cols = ["status", "created", "additionalinfo"]
             indices = [i for i, h in enumerate(headers) if h not in skip_cols]
             filtered_headers = [headers[i] for i in indices]
@@ -414,17 +526,17 @@ if __name__ == "__main__":
 
                     headers, rows =  price_history(conn, sys.argv[3])
                     results = print_table(headers, rows)
-        elif cmd == "extra":
-            add_additional(conn, sys.argv[2])
+        #elif cmd == "extra":
+        #    add_additional(conn, sys.argv[2])
         elif cmd == "help":
             if sys.argv[2] == "get" or sys.argv[2] == "update":
-                printer("=]")
-                printer("=]            *** OPTIONS ***")
-                printer("=]")
-                printer("=] gtin_type, code, brand, manufacturer, name, category (or cat), ")
-                printer("=] qty_value (or qty), qty_default (or qtyd), qty_unit (or qtu)")
-                printer("=] info, note, madein, status, updated, additionalinfo")
-                printer("=]")
+                printer("")
+                printer("              *** OPTIONS ***")
+                printer("")
+                printer("gtin_type, code, brand, manufacturer, name, category (or cat), ")
+                printer("qty_value (or qty), qty_default (or qtyd), qty_unit (or qtu)")
+                printer("info, note, madein, status, updated, additionalinfo")
+                printer("")
         #TC
         print()
         if results:
