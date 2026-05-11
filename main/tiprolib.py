@@ -1,7 +1,7 @@
 #|==============================================================|#
 # Made by IntSPstudio
 # Thank you for using this plugin!
-# Version: 0.0.1.110511
+# Version: 0.0.1.110512
 # ID: 980001022
 #|==============================================================|#
 
@@ -72,6 +72,7 @@ def create_database(conn):
     )
     """)
     conn.commit()
+
 #START THINGS 2
 def initialize(db_path="products.db"):
     conn = sqlite3.connect(db_path)
@@ -94,7 +95,7 @@ def logger(msg):
     log.append(f"{currentdatetime()} ; {msg}")
 
 #REMOVE SPECIAL CHARAGTERS
-def boring_text(input, mode):
+def boring_text(input, mode: int):
     if mode == 0:
         return str("").join(i for i in input if i.isalnum())
     elif mode == 1:
@@ -109,18 +110,6 @@ def parse_qty_input(value):
     unit = match.group(2).lower()
     return qty, unit
 
-#DEFAULT COMMAND LINE TABLE PRINT
-def print_table(headers, rows):
-    output =[]
-    data = [headers] + rows
-    widths = [max(len(str(row[i])) for row in data) for i in range(len(headers))]
-    #DATA
-    for row in data:
-        line = "=] "+ " | ".join(str(row[i]).ljust(widths[i]) for i in range(len(row)))
-        line = line.replace("None", "    ")
-        output.append(line)
-    return output
-
 #IF GTIN = EMPTY -> GENERETED CODE
 def generate_internal_gtin(conn):
     cursor = conn.cursor()
@@ -131,7 +120,7 @@ def generate_internal_gtin(conn):
             return code
 
 #GET TABLE
-def get_table(conn, name, mode):
+def get_table(conn, name: str, mode: int):
     cursor = conn.cursor()
     #RULES
     if name not in ALLOWED_TABLES:
@@ -146,7 +135,7 @@ def get_table(conn, name, mode):
     return output
 
 #CREATE PRODUCT
-def create_product(input: dict):
+def create_product(conn, input: dict):
     now = currentdatetime()
     events =[]
     data ={}
@@ -235,7 +224,7 @@ def create_product(input: dict):
         print("SQL ERROR:", e)
 
 #UPDATE PRODUCT FIELDS DATA
-def update_product(conn, gtin, **fields):
+def update_product(conn, gtin: str, **fields):
     cursor = conn.cursor()
     now = currentdatetime()
     updates = []
@@ -250,8 +239,7 @@ def update_product(conn, gtin, **fields):
         values.append(value)
     #EVEN MORE RULES
     if not updates:
-        logger("Error: no valid fields to update")
-        return
+        return {"Error":"No valid fields to update"}
     #UPDATE
     updates.append("updated=?")
     values.append(now)
@@ -259,10 +247,11 @@ def update_product(conn, gtin, **fields):
     sql = f"UPDATE products SET {', '.join(updates)} WHERE gtin=?"
     with conn:
         cursor.execute(sql, values)
-    logger(f"Updated product {gtin}")
+    output = "Updated product "+ str(gtin)
+    return {"info":output}
 
 #CHANGE PRODUCT STATUS (ACTIVE / PASSIVE)
-def status_product(conn, pid):
+def status_product(conn, pid: int):
     cursor = conn.cursor()
     cursor.execute(
         "SELECT status FROM products WHERE id=?",
@@ -271,8 +260,7 @@ def status_product(conn, pid):
     now = currentdatetime()
     row = cursor.fetchone()
     if not row:
-        logger("Product not found")
-        return
+        return {"error": "Product not found"}
     row = boring_text(row)
     output = "Old status:"+ row
     logger(output)
@@ -286,10 +274,10 @@ def status_product(conn, pid):
             (row, now, pid)
         )
     output = "New status:"+ row
-    logger(output)
+    return {"info": output}
 
 #GET PRODUCT DATA
-def get_product(conn, gtin, field =""):
+def get_product(conn, gtin: str, field: str =""):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM products WHERE gtin=?", (gtin,))
     row = cursor.fetchone()
@@ -306,8 +294,8 @@ def get_product(conn, gtin, field =""):
     else:
         field = FIELD_ALIAS.get(field, field)
         if field not in ALLOWED_FIELDS_PRODUCTS:
-            logger(f"Error: field not allowed -> {field}")
-            return
+            output = "Field not allowed: "+ str(field)
+            return {"error":output}
         #DATA
         product = dict(row)
         for i in product:
@@ -316,7 +304,7 @@ def get_product(conn, gtin, field =""):
                 return output
             
 #ADD NEW PRICE TO PRODUCT PRICE HISTORY
-def add_price(conn, gtin, price, currency ="EUR", place =None):
+def add_price(conn, gtin: str, price, currency ="EUR", place =None):
     cursor = conn.cursor()
     gtin = gtin.replace(" ","")
     if gtin !="":
@@ -329,8 +317,7 @@ def add_price(conn, gtin, price, currency ="EUR", place =None):
             row = cursor.fetchone()
             
             if not row:
-                logger("Product not found")
-                return
+                return {"error":"Product not found"}
             product_id = int(row[0])
 
             with conn:
@@ -339,14 +326,14 @@ def add_price(conn, gtin, price, currency ="EUR", place =None):
                 (product_id, price, currency, place, date)
                 VALUES (?, ?, ?, ?, ?)
                 """, (product_id, price, currency, place, currentdatetime(1)))
-            logger("Price added")
+            return {"info":"Price added"}
         except ValueError:
-            logger("Invalid price")
+            return {"error":"Invalid price"}
     else:
-        logger("No gtin code")
+        return {"error":"Invalid GTIN code"}
 
 #GET PRODUCT PRICE HISTORY DATA
-def price_history(conn, gtin):
+def price_history(conn, gtin: str):
     cursor = conn.cursor()
     gtin = gtin.replace(" ","")
     if gtin:
@@ -358,8 +345,7 @@ def price_history(conn, gtin):
         #RULES
         row = cursor.fetchone()
         if not row:
-            logger("Product not found")
-            return
+            return {"error":"Product not found"}
         product_id = row[0]
         #GET DATA
         cursor.execute("""
@@ -458,8 +444,20 @@ def printer(text: str):
     except Exception as e:
         print(f"Error printing object: {e}")
 
+#DEFAULT COMMAND LINE TABLE PRINT
+def print_table(headers, rows):
+    output =[]
+    data = [headers] + rows
+    widths = [max(len(str(row[i])) for row in data) for i in range(len(headers))]
+    #DATA
+    for row in data:
+        line = " | ".join(str(row[i]).ljust(widths[i]) for i in range(len(row)))
+        line = line.replace("None", "    ")
+        output.append(line)
+    return output
+
 #CREATE PRODUCT WIZARD
-def create_product_wiz(mode =0):
+def create_product_wiz(mode: int =0):
     # 0 = Products, 1 = JSON
     table ={}
     if mode == 0:
@@ -545,7 +543,7 @@ if __name__ == "__main__":
         if cmd == "create":
             if len(sys.argv) == 2:
                 output = create_product_wiz()
-                results = create_product(output)
+                results = create_product(conn, output)
         elif cmd == "products":
             results = get_table(conn, "products", 1)
             headers = results["title"]
