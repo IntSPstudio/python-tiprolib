@@ -1,7 +1,7 @@
 #|==============================================================|#
 # Made by IntSPstudio
 # Thank you for using this plugin!
-# Version: 0.0.1.110512c
+# Version: 0.0.1.110512d
 # ID: 980001022
 #|==============================================================|#
 
@@ -135,6 +135,8 @@ def get_table(conn, name: str, mode: int = 0):
                         item[key] = value
                         if key not in extra_headers:
                             extra_headers.append(key)
+                    #REMOVE ORIGINAL JSON FIELD
+                    item.pop("additionalinfo", None)
                 except json.JSONDecodeError:
                     item["json_error"] = "Invalid JSON"
         output_rows.append(item)
