@@ -1,7 +1,7 @@
 #|==============================================================|#
 # Made by IntSPstudio
 # Thank you for using this plugin!
-# Version: 0.0.1.110512b
+# Version: 0.0.1.110512c
 # ID: 980001022
 #|==============================================================|#
 
@@ -33,7 +33,6 @@ ALLOWED_FIELDS = {
     }
 }
 ALLOWED_FIELDS_PRODUCTS = ALLOWED_FIELDS["products"]
-
 #START THINGS 1
 def create_database(conn):
     cursor = conn.cursor()
@@ -79,7 +78,7 @@ def initialize(db_path="products.db"):
     return conn
 
 #DEFAULT TYPE FOR DATE AND TIME
-def currentdatetime(mode =0):
+def currentdatetime(mode: int = 0):
     if mode == 0:
         now = str(datetime.now().isoformat("#", "auto"))
         now = now.replace("-",".")
@@ -114,19 +113,45 @@ def generate_internal_gtin(conn):
             return code
 
 #GET TABLE
-def get_table(conn, name: str, mode: int):
+def get_table(conn, name: str, mode: int = 0):
     cursor = conn.cursor()
-    #RULES
     if name not in ALLOWED_TABLES:
-        return {"error":"Invalid table"}
-    cursor.execute("SELECT * FROM " + name)
-    headers = [col[0] for col in cursor.description]
+        return {"error": "Invalid table"}
+    cursor.execute(f"SELECT * FROM {name}")
     rows = cursor.fetchall()
-    #MORE RULES
     if not rows:
-        return {"error":"No data"}
-    output = {"title": headers, "content": rows}
-    return output
+        return {"error": "No data"}
+    output_rows = []
+    base_headers = [col[0] for col in cursor.description]
+    extra_headers = []
+    for row in rows:
+        item = dict(row)
+        # JSON EXPAND
+        if mode >= 1:
+            if "additionalinfo" in item and item["additionalinfo"]:
+                try:
+                    extra = json.loads(item["additionalinfo"])
+                    for key, value in extra.items():
+                        item[key] = value
+                        if key not in extra_headers:
+                            extra_headers.append(key)
+                except json.JSONDecodeError:
+                    item["json_error"] = "Invalid JSON"
+        output_rows.append(item)
+    headers = base_headers + extra_headers
+    #MODE 0 = RAW SQLITE
+    if mode == 0:
+        return rows
+    #MODE 1 = STRUCTURED
+    elif mode == 1:
+        return {
+            "title": headers,
+            "content": output_rows
+        }
+    #MODE 2 = API READY
+    elif mode == 2:
+        return output_rows
+    return {"error": "Invalid mode"}
 
 #CREATE PRODUCT
 def create_product(conn, input: dict):
@@ -280,9 +305,11 @@ def get_product(conn, gtin: str, field: str =""):
         return {"error":"Product not found"}
     #GET ALL DATA
     if field == "":
-        #additional = json.loads(row["additionalinfo"] or "{}")
         product = dict(row)
-        #product.update(additional)
+        if product["additionalinfo"]:
+            additional = json.loads(row["additionalinfo"] or "{}")
+            product.pop("additionalinfo")
+            product.update(additional)
         return product
     #GET SPECIFIG DATA
     else:
@@ -549,13 +576,27 @@ if __name__ == "__main__":
             results = get_table(conn, "products", 1)
             headers = results["title"]
             rows = results["content"]
-            skip_cols = ["status", "created", "additionalinfo"]
-            indices = [i for i, h in enumerate(headers) if h not in skip_cols]
-            filtered_headers = [headers[i] for i in indices]
+            skip_cols = [
+                "status",
+                "created",
+                "additionalinfo",
+                "updated"
+            ]
+            #FILTER HEADERS
+            filtered_headers = [
+                h for h in headers
+                if h not in skip_cols
+            ]
             filtered_rows = []
             for row in rows:
-                filtered_rows.append([row[i] for i in indices])
-            results = print_table(filtered_headers, filtered_rows)
+                filtered_rows.append([
+                    row.get(header, "")
+                    for header in filtered_headers
+                ])
+            results = print_table(
+                filtered_headers,
+                filtered_rows
+            )
         elif cmd == "get":
             if len(sys.argv) == 3:
                 results = get_product(conn, sys.argv[2])
@@ -592,7 +633,7 @@ if __name__ == "__main__":
                 if arg1 == "mod":
                     output = create_product_wiz(1)
                     results = mod_additional(conn, arg2, 2, output)
-        #    add_additional(conn, sys.argv[2])
+        #
         elif cmd == "help":
             if sys.argv[2] == "get" or sys.argv[2] == "update":
                 printer("")
