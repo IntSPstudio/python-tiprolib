@@ -7,34 +7,60 @@
 #RULES
 ALLOWED_TABLES = [
     "products",
-    "price_history"
+    "identifiers",
+    "inventory",
+    "price_history",
+    "organizations",
+    "inventory",
+    "categorys",
+    "locations"
 ]
 
 FIELD_ALIAS = {
     "qty": "qty_value",
     "qtyu": "qty_unit",
     "qtyd": "qty_default",
-    "cat": "category"
+    "cat": "category_id",
+    "mfg": "manufacturer_id"
 }
 
 ALLOWED_FIELDS = {
     "products": {
         "id",
-        "gtin",
-        "gtin_type",
-        "code",
-        "brand",
-        "manufacturer",
+        "brand_id",
+        "category_id",
         "name",
-        "qty_value",
         "qty_default",
         "qty_unit",
         "info",
         "note",
-        "madein",
-        "additionalinfo",
-        "status",
-        "category"
+        "extra",
+        "status_id",
+    },
+    "identifiers": {
+        "id",
+        "product_id",
+        "identifier",
+        "type",
+        "info",
+        "status_id",
+    },
+    "inventory": {
+        "id",
+        "product_id",
+        "identifier_id",
+        "qty_value",
+        "qty_unit",
+        "manufactured_id",
+        "extra",
+        "status_id"
+    },
+    "quantity": {
+        "id",
+        "product_id",
+        "identifier_id",
+        "value",
+        "status_id"
     }
 }
 

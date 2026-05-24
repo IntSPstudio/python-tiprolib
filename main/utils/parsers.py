@@ -29,4 +29,4 @@ def parse_qty_input(value):
             raise ValueError(f"Unknown unit/currency: {unit}")
     else:
         unit = None
-    return qty, unit
+    return {"value": qty, "unit": unit}

@@ -13,20 +13,15 @@ SQLITE_PATH = "products.db"
 
 DATABASES = {
     "sqlite": {
-        "path": "products.db"
+        "path": SQLITE_PATH
     },
 
     "mariadb": {
         "host": "localhost",
         "user": "",
         "password": "",
-        "database": ""
+        "database": "tiprolib"
     }
-}
-
-TABLES = {
-    "products": "products",
-    "price_history": "price_history"
 }
 
 #|FEATURES|=====================================================|#

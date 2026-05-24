@@ -9,10 +9,7 @@ from utils.printer import (printer)
 
 #MAIN
 def create_dictionary_wiz(mode: int =0):
-    # 0 = Products, 1 = JSON
     table ={}
-    #if mode == 0:
-    #    table = ALLOWED_FIELDS_PRODUCTS
     #START
     loop =1
     continuity =1

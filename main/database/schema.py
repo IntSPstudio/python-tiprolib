@@ -6,8 +6,6 @@
 
 #SETTINGS
 from config import DATABASE_TYPE
-from config import TABLES
-from database.adapter import AUTOINCREMENT
 
 #DATABASE
 def create_database(conn):
@@ -15,28 +13,79 @@ def create_database(conn):
 
     #SQLITE
     if DATABASE_TYPE == "sqlite":
-        cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY {AUTOINCREMENT},
-            gtin TEXT UNIQUE,
-            gtin_type TEXT,
-            code TEXT,
-            brand TEXT,
-            manufacturer TEXT,
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            brand_id INTEGER,
             name TEXT,
-            qty_value REAL,
             qty_default REAL,
             qty_unit TEXT,
-            category TEXT,
+            category_id INTEGER,
             info TEXT,
             note TEXT,
-            madein TEXT,
-            status TEXT,
+            status_id INTEGER,
             created DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated TEXT,
-            additionalinfo TEXT
+            extra TEXT
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS product_identifiers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER,
+            identifier TEXT,
+            type TEXT,
+            info TEXT,
+            status_id INTEGER,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT
+        )
+        """)
+        cursor.execute("""                
+        CREATE TABLE IF NOT EXISTS product_inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER,
+            identifier_id INTEGER,
+            qty_value REAL,
+            qty_unit TEXT,
+            manufacturer_id INTEGER,
+            extra TEXT,
+            status_id INTEGER,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT
+        )
+        """)
+        cursor.execute("""  
+        CREATE TABLE IF NOT EXISTS quantity_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER,
+            identifier_id INTEGER,
+            value INTEGER,
+            status_id INTEGER,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT
+        )
+        """)
+        cursor.execute("""                
+        CREATE TABLE IF NOT EXISTS organizations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE,
+            info TEXT,
+            status_id INTEGER,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS categorys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE,
+            info TEXT,
+            status_id INTEGER,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT
+        )
+        """) 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS price_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +93,18 @@ def create_database(conn):
             price REAL,
             currency TEXT,
             place TEXT,
-            date DATETIME DEFAULT CURRENT_TIMESTAMP
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            status_id INTEGER
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE,
+            organizations_id INTEGER,
+            status_id,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated TEXT
         )
         """)
     #COMMON

@@ -5,6 +5,20 @@
 # ID: 980001023
 #|==============================================================|#
 
+"""
+    =========================== INFO ===========================
+
+    TABLES:               | INFO:
+    product_identifiers   | 
+    products_data         | 
+    product_inventory     | 
+    quantity_history      | 
+    price_history         |
+    categorys             |
+    organizations         |
+    locations             |
+"""
+
 #SETTINGS
 from database import get_conn
 from database.schema import create_database
