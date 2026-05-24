@@ -10,6 +10,7 @@ from utils.printer import printer
 from utils.prompt import cli_screen_clear
 from cli.dictionary import create_dictionary_wiz
 from core.products import create_product
+from core.organizations import get_or_create_org
 
 #COMMAND LINE INTERFACE
 def run_cli(conn):
@@ -50,5 +51,22 @@ def run_cli(conn):
                 printer("/Inventory")
                 printer("            *** Welcome! Available commands ***")
                 printer("")
+        #
+        # ORGANIZATIONS
+        #
+        elif master == "organizations" or master == "org":
+            if len(sys.argv) < 3:
+                printer("")
+                printer("/Organizations")
+                printer("            *** Welcome! Available commands ***")
+                printer("")
+            else:
+                #GET OR CREATE ORGANIZATIONS
+                if len(sys.argv) == 4 and sys.argv[2] == "create" and sys.argv[3]:
+                    results = get_or_create_org(conn,sys.argv[3],"")
+        #
+        #RESULTS
+        #
+        printer("Results", results)
     except:
         printer("Error")
