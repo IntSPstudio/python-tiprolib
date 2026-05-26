@@ -1,5 +1,6 @@
 #|==============================================================|#
 # Made by IntSPstudio
+# TIPROLIB VANILLA
 # Thank you for using this plugin!
 # Version: 0.0.1.110515
 # ID: 980001022
