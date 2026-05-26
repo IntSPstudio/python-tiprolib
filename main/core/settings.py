@@ -28,6 +28,26 @@ FIELD_ALIAS = {
         "add": "street_addres",
         "gtin": "identifier",
         "code": "identifier"
+    },
+    "add_products": {
+        "b": "brand_id",
+        "n": "name",
+        "qd": "qty_default",
+        "qu": "qty_unit",
+        "c": "category_id",
+        "i": "info"
+    },
+    "add_organizations": {
+        "n": "name",
+        "i": "info"
+    },
+    "add_locations": {
+        "n": "name",
+        "o": "organization_id",
+        "s": "street_address",
+        "p": "postal_code",
+        "c": "city",
+        "i": "info"
     }
 }
 
@@ -68,7 +88,7 @@ ALLOWED_FIELDS = {
         "id",
         "name",
         "organization_id",
-        "street_addres",
+        "street_address",
         "postal_code",
         "city",
         "info"

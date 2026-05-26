@@ -5,12 +5,15 @@
 #|==============================================================|#
 
 #SETTINGS
-from utils.printer import (printer)
-from core.settings import ALLOWED_FIELDS
+from utils.printer import printer
+from core.settings import FIELD_ALIAS
 
 #MAIN
 def create_dictionary_wiz(help: str = None):
-    table = ALLOWED_FIELDS[help]
+    if help:
+        table = FIELD_ALIAS[help]
+    else:
+        table = None
     #START
     loop =1
     continuity =1
@@ -25,13 +28,9 @@ def create_dictionary_wiz(help: str = None):
                 continuity =0
             elif str.lower(raw_input) == "info" or str.lower(raw_input) == "help":
                 if table:
-                    a ="=]"
-                    c =0
-                    d =""
-                    for b in table:
-                        c +=1
-                        a = a +" "+str(c)+". "+ str(b)
-                    print(a)
+                    printer("    Options:")
+                    for key, value in table.items():
+                        printer(f"    {key}: {value}")
             else:
                 parts = raw_input.split("=", 1)
                 if len(parts) != 2:

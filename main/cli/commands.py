@@ -30,7 +30,6 @@ def run_cli(conn):
         printer(" -Products")
         printer(" -Inventory")
         printer(" -Organizations")
-
         printer("")
     #OPTIONS
     else:
@@ -50,7 +49,7 @@ def run_cli(conn):
                 #CREATE PRODUCT
                 if len(sys.argv) == 3 and sys.argv[2] == "create":
                     #CREATING CONTENT
-                    output = create_dictionary_wiz("products")
+                    output = create_dictionary_wiz("add_products")
                     results = create_product(conn,output)
         #
         # INVENTORY
@@ -93,9 +92,13 @@ def run_cli(conn):
                 printer("            *** Welcome! Available commands ***")
                 printer("")
             else:
+                #GET ALL
+                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
+                    output = get_all(conn, "locations")
+                    results = print_crud_data(output)
                 #GET OR CREATE ORGANIZATIONS
                 if len(sys.argv) == 3 and sys.argv[2] == "create":
-                    output = create_dictionary_wiz("locations")
+                    output = create_dictionary_wiz("add_locations")
                     results = get_or_create_loc(conn,output)
         #
         # OUTPUT

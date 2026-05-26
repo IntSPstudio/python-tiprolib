@@ -23,7 +23,7 @@ def printer(text: str):
 def print_table(headers, rows):
     #RULES
     if not headers:
-        return ["Ei näytettävää dataa."]
+        return {"error":"No data"}
     #TABLE
     data = [headers] + rows
     widths = [max(len(str(row[i])) for row in data) for i in range(len(headers))]
@@ -39,7 +39,7 @@ def print_table(headers, rows):
 def print_crud_data(data):
     #RULES
     if not data:
-        return ["Ei tuloksia."]
+        return {"error":"No data"}
     if isinstance(data, dict):
         data = [data]
     #TITLES
