@@ -19,12 +19,12 @@ def printer(text: str):
     except Exception as e:
         print(f"Error printing object: {e}")
 
-# DEFAULT COMMAND LINE TABLE PRINT
+#DEFAULT COMMAND LINE TABLE PRINT
 def print_table(headers, rows):
     #RULES
     if not headers:
         return ["Ei näytettävää dataa."]
-    #
+    #TABLE
     data = [headers] + rows
     widths = [max(len(str(row[i])) for row in data) for i in range(len(headers))]
     # DATA
@@ -35,12 +35,11 @@ def print_table(headers, rows):
         output.append(line)
     return output
 
-# UUSI APUFUNKTIO CRUD-DATAA VARTEN
+#CRUD DATA PRINT
 def print_crud_data(data):
     #RULES
     if not data:
         return ["Ei tuloksia."]
-    #RULES
     if isinstance(data, dict):
         data = [data]
     #TITLES
