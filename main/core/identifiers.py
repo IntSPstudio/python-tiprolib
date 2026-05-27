@@ -6,6 +6,7 @@
 
 #SETTINGS
 from random import randint
+from database.adapter import PLACEHOLDER
 
 #IF NOT CODE -> INTERNAL CODE
 def generate_internal_code(conn):
@@ -15,7 +16,7 @@ def generate_internal_code(conn):
             randint(1000000000, 9999999999)
         )
         cursor.execute(
-            "SELECT identifiers FROM product_identifiers WHERE identifiers=?",
+            f"SELECT identifiers FROM product_identifiers WHERE identifiers={PLACEHOLDER}",
             (code,)
         )
         if not cursor.fetchone():
@@ -24,4 +25,17 @@ def generate_internal_code(conn):
 #GET OR CREATE
 def get_or_create_iden(conn, input: dict):
     cursor = conn.cursor()
-    
+
+#SCANNER
+def get_by_identifier(conn, identifier: str):
+    cursor = conn.cursor()
+    query = f"""
+        SELECT p.*, o.name as brand_name, i.value as identifier
+        FROM product_data p
+        JOIN identifiers i ON p.id = i.product_id
+        JOIN organizations o ON p.organization_id = o.id
+        WHERE i.value = {PLACEHOLDER} AND p.status_id = 1
+    """
+    cursor.execute(query, (identifier,))
+    row = cursor.fetchone()
+    return {"results":row}

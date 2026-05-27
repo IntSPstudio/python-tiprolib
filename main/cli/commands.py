@@ -8,9 +8,10 @@
 import sys
 from utils.printer import printer, print_crud_data
 from utils.prompt import cli_screen_clear
+from enums.status import Status
 from cli.dictionary import create_dictionary_wiz
 from core.crud import get_all
-from core.crud import get_by_id
+from core.crud import update_status
 from core.products import create_product
 from core.organizations import get_or_create_org
 from core.locations import get_or_create_loc
@@ -71,6 +72,7 @@ def run_cli(conn):
                 printer("")
                 printer(" - get all")
                 printer(" - create NAME INFO")
+                printer(" - status STATE ID ")
                 printer("")
             else:
                 #GET ALL
@@ -82,6 +84,14 @@ def run_cli(conn):
                     results = get_or_create_org(conn,sys.argv[3],"")
                 elif len(sys.argv) == 5 and sys.argv[2] == "create" and sys.argv[3] and sys.argv[4]:
                     results = get_or_create_org(conn, sys.argv[3], sys.argv[4])
+                #STATUS
+                elif len(sys.argv) == 5 and sys.argv[2] == "status" and sys.argv[3] and sys.argv[4]:
+                    if sys.argv[3] == "active":
+                        results = update_status(conn, "organizations", sys.argv[4], Status.ACTIVE.value)
+                    elif sys.argv[3] == "passive":
+                        results = update_status(conn, "organizations", sys.argv[4], Status.PASSIVE.value)
+                    elif sys.argv[3] == "delete":
+                        results = update_status(conn, "organizations", sys.argv[4], Status.DELETED.value)
         #
         # LOCATIONS
         #
@@ -90,6 +100,9 @@ def run_cli(conn):
                 printer("")
                 printer("/Locations")
                 printer("            *** Welcome! Available commands ***")
+                printer("")
+                printer(" - get all")
+                printer(" - create")
                 printer("")
             else:
                 #GET ALL

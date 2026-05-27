@@ -57,3 +57,28 @@ def get_by_id(conn, table_name, row_id):
     except sqlite3.Error as e:
         print(f"Error with {table_name}): {e}")
         return None
+    
+#STATUS UPDATE
+def update_status(conn, table_name: str, row_id: int, new_status: int):
+    #TABLE RULES
+    if table_name not in ALLOWED_TABLES:
+        raise ValueError(f"Invalid table '{table_name}'")
+    cursor = conn.cursor()
+    #QUERY
+    query = f"""
+        UPDATE {table_name} 
+        SET status_id = {PLACEHOLDER}, updated = CURRENT_TIMESTAMP 
+        WHERE id = {PLACEHOLDER}
+    """
+    #SEND IT
+    try:
+        cursor.execute(query, (new_status, row_id))
+        conn.commit()
+        #CHECK
+        if cursor.rowcount == 0:
+            return {"status": "error", "message": f"ID {row_id} not found in the {table_name}"}
+        return {"status": "success", "message": f"Status update (ID: {row_id})"}
+    #ERROR
+    except sqlite3.Error as e:
+        conn.rollback()
+        return {"status": "error", "message": str(e)}
