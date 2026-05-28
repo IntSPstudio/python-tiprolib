@@ -25,13 +25,13 @@
 
 #SETTINGS
 from database import get_conn
-from database.schema import create_database
+from database.setup import initialize_basics
 from cli.commands import run_cli
 
 #MAIN LOOP
 def main():
     conn = get_conn()
-    create_database(conn)
+    initialize_basics(conn)
     run_cli(conn)
 
 #START

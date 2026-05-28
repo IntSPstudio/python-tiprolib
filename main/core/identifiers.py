@@ -49,14 +49,14 @@ def get_or_create_type(conn, type_input: str):
     if not code:
         return {"error": "Identifier code is required"}
     #CHECK
-    cursor.execute(f"SELECT id FROM identifier_types WHERE code = {PLACEHOLDER}", (code,))
+    cursor.execute(f"SELECT id FROM identifier_types WHERE value = {PLACEHOLDER}", (code,))
     row = cursor.fetchone()
     #IF EXISTS
     if row:
         return {"id": row[0], "status": "exists"}
     #CREATE
     try:
-        cursor.execute(f"INSERT INTO identifier_types (code) VALUES ({PLACEHOLDER})", (code,))
+        cursor.execute(f"INSERT INTO identifier_types (value) VALUES ({PLACEHOLDER})", (code,))
         conn.commit()
         return {"id": cursor.lastrowid, "status": "created"}
     #ERROR

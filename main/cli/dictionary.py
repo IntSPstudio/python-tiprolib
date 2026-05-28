@@ -5,7 +5,7 @@
 #|==============================================================|#
 
 #SETTINGS
-from utils.printer import printer
+from utils.printer import printer, print_crud_data
 from core.settings import FIELD_ALIAS
 
 #MAIN
@@ -29,7 +29,7 @@ def create_dictionary_wiz(help: str = None):
             elif str.lower(raw_input) == "info" or str.lower(raw_input) == "help":
                 if table:
                     printer("    Options:")
-                    #NOT WORKING WHIT PRODUCTS YET
+
                     for key, value in table.items():
                         printer(f"    {key}: {value}")
             else:

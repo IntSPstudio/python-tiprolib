@@ -151,5 +151,28 @@ def create_database(conn):
             FOREIGN KEY(organization_id) REFERENCES organizations(id)
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            price REAL,
+            vendor_id INTEGER,
+            status_id INTEGER DEFAULT 1,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(vendor_id) REFERENCES organizations(id)
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            price REAL,
+            customer_id INTEGER,
+            payment_status INTEGER,
+            status_id INTEGER DEFAULT 1,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(customer_id) REFERENCES organizations(id)
+        )
+        """)
     #COMMON
     conn.commit()

@@ -7,6 +7,7 @@
 #SETTINGS
 import sqlite3
 from core.organizations import get_or_create_org
+from core.categories import get_or_create_cat
 from core.identifiers import get_or_create_type
 from core.settings import FIELD_ALIAS, ALLOWED_FIELDS_PRD
 from database.adapter import PLACEHOLDER
