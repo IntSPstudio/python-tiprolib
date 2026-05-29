@@ -21,11 +21,43 @@ def create_database(conn):
 #DEFAULT VALUES TO DATABASE
 def seed_defaults(conn):
     cursor = conn.cursor()
+    #ORGANIZATION INI
+    insert_default(cursor, "organizations", 1, {"name": "default", "info": "Default organization"})
+    insert_default(cursor, "organizations", 2, {"name": "undefined", "info": "Undefined organization"})
+    insert_default(cursor, "organizations", 3, {"name": "cash_customer", "info": "Default cash customer"})
+    #WEBSITE USERS
+    insert_default(cursor, "web_users", 1, {
+        "username": "korhonen",
+        "display_name": "Korhonen",
+        "password_hash": "",
+        "role": "admin",
+        "must_change_password": 1,
+    })
+    insert_default(cursor, "web_users", 1, {
+        "username": "virtanen",
+        "display_name": "Virtanen",
+        "password_hash": "",
+        "role": "admin",
+        "must_change_password": 1,
+    })
+
+    #IDENTIFIERS
+    for type_id, value, name in [
+        (1, "internal", "Internal code"),
+        (2, "upc", "UPC"),
+        (3, "ean13", "EAN-13"),
+        (4, "ean8", "EAN-8"),
+        (5, "isbn", "ISBN"),
+        (6, "pn", "Part number"),
+        (7, "sn", "Serial number"),
+    ]:
+        insert_default(cursor, "identifier_types", type_id, {"value": value, "name": name})
 
 #INSERT HELPER
 def insert_default(cursor, table, row_id, values):
     #TABLE RULES
     if table not in ALLOWED_TABLES:
+        print("HEI")
         raise ValueError(f"Invalid table '{table}'")
     #GET DATA
     cursor.execute(f"SELECT id FROM {table} WHERE id = {PLACEHOLDER}", (row_id,))
