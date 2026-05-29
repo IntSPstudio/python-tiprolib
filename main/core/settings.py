@@ -6,15 +6,23 @@
 
 #RULES
 ALLOWED_TABLES = [
-    "products",
-    "identifiers",
-    "stock",
-    "stock_log",
-    "stock_slot",
-    "price_history",
+    "statuses",
     "organizations",
     "categories",
-    "locations"
+    "locations",
+    "deposit_types",
+    "products",
+    "identifier_types",
+    "identifiers",
+    "stock_slots",
+    "stock",
+    "stock_logs",
+    "price_history",
+    "purchases",
+    "purchase_lines",
+    "sales",
+    "sale_lines",
+    "web_users"
 ]
 
 FIELD_ALIAS = {

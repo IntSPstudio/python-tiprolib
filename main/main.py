@@ -6,23 +6,6 @@
 # ID: 980001023
 #|==============================================================|#
 
-"""
-    |========================== INFO ==========================|
-
-    TABLES:               | INFO:
-    identifier_types      | UPC, EAN13, EAN8, ISBN etc
-    identifiers           | Gtin's, unique product id's, links 
-    products              | Product data reference
-    categories            | Product categories
-    stock                 | Stock inventory
-    stock_logs            | Counts the quantities of products in stock inventory
-    stock_slots           | Stock inventory locations
-    price_history         | Product price history
-    organizations         | All the organizations, brands or manufactures etc
-    locations             | Location of organizations
-
-"""
-
 #SETTINGS
 from database import get_conn
 from database.setup import initialize_basics

@@ -6,173 +6,293 @@
 
 #SETTINGS
 from config import DATABASE_TYPE
+from database.adapter import PLACEHOLDER
+from core.settings import ALLOWED_TABLES
 
-#DATABASE
+#DATABASE SETTINGS
 def create_database(conn):
     cursor = conn.cursor()
-
-    #SQLITE
+    #DATABASE TYPES
     if DATABASE_TYPE == "sqlite":
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            brand_id INTEGER,
-            name TEXT,
-            qty_default REAL,
-            qty_unit TEXT,
-            weight_default REAL,
-            category_id INTEGER,
-            info TEXT,
-            note TEXT,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            extra TEXT,
-            FOREIGN KEY(brand_id) REFERENCES organizations(id),
-            FOREIGN KEY(category_id) REFERENCES categories(id)
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS identifiers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            value TEXT,
-            type_id INTEGER,
-            info TEXT,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(product_id) REFERENCES products(id)
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS identifier_types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            value TEXT UNIQUE,
-            name TEXT,
-            info TEXT,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS stock (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            identifier_id INTEGER,
-            qty_value REAL,
-            qty_unit TEXT,
-            weight REAL,
-            manufacturer_id INTEGER,
-            extra TEXT,
-            slot_id INTEGER,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(product_id) REFERENCES products(id),
-            FOREIGN KEY(identifier_id) REFERENCES identifiers(id),
-            FOREIGN KEY(manufacturer_id) REFERENCES organizations(id),
-            FOREIGN KEY(slot_id) REFERENCES stock_slot(id)
-        )
-        """)
-        cursor.execute("""  
-        CREATE TABLE IF NOT EXISTS stock_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            identifier_id INTEGER,
-            value INTEGER,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(product_id) REFERENCES products(id),
-            FOREIGN KEY(identifier_id) REFERENCES identifiers(id)
-        )
-        """)
-        cursor.execute("""  
-        CREATE TABLE IF NOT EXISTS stock_slots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            code TEXT UNIQUE,
-            info TEXT,
-            location_id INTEGER,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(location_id) REFERENCES locations(id)
-        )
-        """)
-        cursor.execute("""                
-        CREATE TABLE IF NOT EXISTS organizations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE,
-            info TEXT,
-            master_id INTEGER
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE,
-            info TEXT,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-        """) 
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS price_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            price REAL,
-            currency TEXT,
-            location_id INTEGER,
-            organization_id INTEGER,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            status_id INTEGER DEFAULT 1,
-            FOREIGN KEY(product_id) REFERENCES products(id),
-            FOREIGN KEY(location_id) REFERENCES locations(id),
-            FOREIGN KEY(organization_id) REFERENCES organizations(id)
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS locations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE,
-            organization_id INTEGER,
-            street_address TEXT,
-            postal_code TEXT,
-            city TEXT,
-            info TEXT,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(organization_id) REFERENCES organizations(id)
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS purchases (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            price REAL,
-            vendor_id INTEGER,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(vendor_id) REFERENCES organizations(id)
-        )
-        """)
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sales (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            price REAL,
-            customer_id INTEGER,
-            payment_status INTEGER,
-            status_id INTEGER DEFAULT 1,
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(customer_id) REFERENCES organizations(id)
-        )
-        """)
-    #COMMON
+        create_sqlite(cursor)
     conn.commit()
+    seed_defaults(conn)
+
+#DEFAULT VALUES TO DATABASE
+def seed_defaults(conn):
+    cursor = conn.cursor()
+
+#INSERT HELPER
+def insert_default(cursor, table, row_id, values):
+    #TABLE RULES
+    if table not in ALLOWED_TABLES:
+        raise ValueError(f"Invalid table '{table}'")
+    #GET DATA
+    cursor.execute(f"SELECT id FROM {table} WHERE id = {PLACEHOLDER}", (row_id,))
+    if cursor.fetchone():
+        return
+    #SEND IT
+    columns = ["id"] + list(values.keys())
+    placeholders = ", ".join([PLACEHOLDER] * len(columns))
+    cursor.execute(
+        f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
+        (row_id, *values.values()),
+    )
+
+#SQLITE DATABASES
+def create_sqlite(cursor):
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS statuses (
+        id INTEGER PRIMARY KEY,
+        value TEXT UNIQUE NOT NULL,
+        name TEXT,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS organizations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        info TEXT,
+        master_id INTEGER,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(master_id) REFERENCES organizations(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        info TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        organization_id INTEGER DEFAULT 1,
+        street_address TEXT,
+        postal_code TEXT,
+        city TEXT,
+        info TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(organization_id) REFERENCES organizations(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS deposit_types (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        name TEXT,
+        amount REAL DEFAULT 0,
+        currency TEXT DEFAULT 'eur',
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        brand_id INTEGER DEFAULT 1,
+        name TEXT NOT NULL,
+        qty_default REAL DEFAULT 1,
+        qty_unit TEXT DEFAULT 'pcs',
+        weight_default REAL,
+        weight_unit TEXT DEFAULT 'kg',
+        category_id INTEGER,
+        deposit_type_id INTEGER DEFAULT 1,
+        info TEXT,
+        note TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        extra TEXT,
+        FOREIGN KEY(brand_id) REFERENCES organizations(id),
+        FOREIGN KEY(category_id) REFERENCES categories(id),
+        FOREIGN KEY(deposit_type_id) REFERENCES deposit_types(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS identifier_types (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        value TEXT UNIQUE NOT NULL,
+        name TEXT,
+        info TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS identifiers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER,
+        value TEXT UNIQUE NOT NULL,
+        type_id INTEGER DEFAULT 1,
+        info TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(type_id) REFERENCES identifier_types(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stock_slots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL,
+        path TEXT UNIQUE,
+        parent_id INTEGER,
+        organization_id INTEGER,
+        info TEXT,
+        location_id INTEGER,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(parent_id) REFERENCES stock_slots(id),
+        FOREIGN KEY(organization_id) REFERENCES organizations(id),
+        FOREIGN KEY(location_id) REFERENCES locations(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stock (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        identifier_id INTEGER,
+        qty_value REAL DEFAULT 0,
+        qty_unit TEXT,
+        weight REAL,
+        weight_unit TEXT DEFAULT 'kg',
+        manufacturer_id INTEGER DEFAULT 1,
+        extra TEXT,
+        slot_id INTEGER DEFAULT 1,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(identifier_id) REFERENCES identifiers(id),
+        FOREIGN KEY(manufacturer_id) REFERENCES organizations(id),
+        FOREIGN KEY(slot_id) REFERENCES stock_slots(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stock_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        stock_id INTEGER,
+        product_id INTEGER,
+        identifier_id INTEGER,
+        action TEXT NOT NULL,
+        qty_delta REAL DEFAULT 0,
+        qty_unit TEXT,
+        reason TEXT,
+        ref_table TEXT,
+        ref_id INTEGER,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(stock_id) REFERENCES stock(id),
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(identifier_id) REFERENCES identifiers(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS price_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        price REAL NOT NULL,
+        currency TEXT DEFAULT 'eur',
+        location_id INTEGER,
+        organization_id INTEGER,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        status_id INTEGER DEFAULT 1,
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(location_id) REFERENCES locations(id),
+        FOREIGN KEY(organization_id) REFERENCES organizations(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS purchases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        organization_id INTEGER DEFAULT 1,
+        vendor_id INTEGER DEFAULT 2,
+        total_price REAL,
+        currency TEXT DEFAULT 'eur',
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(organization_id) REFERENCES organizations(id),
+        FOREIGN KEY(vendor_id) REFERENCES organizations(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS purchase_lines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        purchase_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        identifier_id INTEGER,
+        qty_value REAL DEFAULT 1,
+        qty_unit TEXT,
+        unit_price REAL,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(purchase_id) REFERENCES purchases(id),
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(identifier_id) REFERENCES identifiers(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        organization_id INTEGER DEFAULT 1,
+        customer_id INTEGER DEFAULT 3,
+        total_price REAL,
+        currency TEXT DEFAULT 'eur',
+        payment_status INTEGER DEFAULT 0,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(organization_id) REFERENCES organizations(id),
+        FOREIGN KEY(customer_id) REFERENCES organizations(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sale_lines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        identifier_id INTEGER,
+        qty_value REAL DEFAULT 1,
+        qty_unit TEXT,
+        unit_price REAL,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(sale_id) REFERENCES sales(id),
+        FOREIGN KEY(product_id) REFERENCES products(id),
+        FOREIGN KEY(identifier_id) REFERENCES identifiers(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS web_users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        display_name TEXT,
+        password_hash TEXT,
+        role TEXT DEFAULT 'seller',
+        must_change_password INTEGER DEFAULT 1,
+        token_secret TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
