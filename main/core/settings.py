@@ -189,3 +189,17 @@ ALLOWED_FIELDS = {
 
 ALLOWED_FIELDS_PRD = ALLOWED_FIELDS["products"]
 ALLOWED_FIELDS_LOC = ALLOWED_FIELDS["locations"]
+
+PRODUCT_UPDATE_FIELDS = {
+    "name",
+    "brand_id",
+    "category_id",
+    "qty_default",
+    "qty_unit",
+    "weight_default",
+    "weight_unit",
+    "deposit_type_id",
+    "info",
+    "note",
+    "extra",
+}

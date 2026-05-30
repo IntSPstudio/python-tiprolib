@@ -52,6 +52,7 @@ def seed_defaults(conn):
         (7, "sn", "Serial number"),
     ]:
         insert_default(cursor, "identifier_types", type_id, {"value": value, "name": name})
+    conn.commit()
 
 #INSERT HELPER
 def insert_default(cursor, table, row_id, values):

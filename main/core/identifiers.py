@@ -26,6 +26,25 @@ def generate_internal_code(conn):
 #GET OR CREATE
 def get_or_create_iden(conn, input: dict):
     cursor = conn.cursor()
+    value = str(input.get("value", "")).strip().replace(" ", "")
+    product_id = input.get("product_id")
+    type_id = input.get("type_id") or get_or_create_type(conn, "internal").get("id")
+    info = input.get("info")
+    if not value:
+        value = generate_internal_code(conn)
+    cursor.execute(f"SELECT id, product_id FROM identifiers WHERE value = {PLACEHOLDER}", (value,))
+    row = cursor.fetchone()
+    if row:
+        return {"id": row[0], "product_id": row[1], "status": "exists"}
+    cursor.execute(
+        f"""
+        INSERT INTO identifiers (product_id, value, type_id, info)
+        VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})
+        """,
+        (product_id, value, type_id, info),
+    )
+    conn.commit()
+    return {"id": cursor.lastrowid, "value": value, "status": "created"}
 
 #SCANNER
 def get_by_identifier(conn, identifier: str):
