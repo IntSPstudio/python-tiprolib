@@ -48,17 +48,21 @@ def get_or_create_iden(conn, input: dict):
 
 #SCANNER
 def get_by_identifier(conn, identifier: str):
+    identifier.strip().lower()
     cursor = conn.cursor()
     query = f"""
-        SELECT p.*, o.name as brand_name, i.value as identifier
-        FROM product_data p
+        SELECT p.*, o.name as brand_name, i.value as identifier_value
+        FROM products p
         JOIN identifiers i ON p.id = i.product_id
-        JOIN organizations o ON p.organization_id = o.id
+        JOIN organizations o ON p.brand_id = o.id
         WHERE i.value = {PLACEHOLDER} AND p.status_id = 1
     """
     cursor.execute(query, (identifier,))
     row = cursor.fetchone()
-    return {"results":row}
+    if row:
+        columns = [column[0] for column in cursor.description]
+        result = dict(zip(columns, row))
+        return {"results": result}
 
 #GET OR CREATE IDENTIFIER TYPE
 def get_or_create_type(conn, type_input: str):

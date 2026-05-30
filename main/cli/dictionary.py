@@ -32,13 +32,15 @@ def create_dictionary_wiz(help: str = None):
                     if help == "add_complete_product":
                         table_w = 12
                         alias_w = 8
+                        name_w = 15
                         printer("")
                         #printer(f"    {"table":<{table_w}} | {"shortcut":<{alias_w}} | code")
                         for table in FIELD_ALIAS["add_complete_product"]:
                             table_name = FIELD_ALIAS["add_complete_product"][table]["table"]
                             alias_key = table
                             field_name = FIELD_ALIAS["add_complete_product"][table]["name"]
-                            printer(f"    {table_name:<{table_w}} | {alias_key:<{alias_w}} | {field_name}")
+                            field_info = FIELD_ALIAS["add_complete_product"][table]["help"]
+                            printer(f"    {table_name:<{table_w}} | {alias_key:<{alias_w}} | {field_name:<{name_w}} |  {field_info}")
                         printer("")
                     else:
                         for key, value in table.items():

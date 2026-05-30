@@ -25,6 +25,8 @@ def seed_defaults(conn):
     insert_default(cursor, "organizations", 1, {"name": "default", "info": "Default organization"})
     insert_default(cursor, "organizations", 2, {"name": "undefined", "info": "Undefined organization"})
     insert_default(cursor, "organizations", 3, {"name": "cash_customer", "info": "Default cash customer"})
+    #CATEGORY
+    insert_default(cursor, "categories", 1, {"name": "default", "info": "Default category"})
     #WEBSITE USERS 1
     insert_default(cursor, "web_users", 1, {
         "username": "korhonen",

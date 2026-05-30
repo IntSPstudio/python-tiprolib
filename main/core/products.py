@@ -69,7 +69,7 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
             identifier_data["type_id"] = guess_identifier_type(conn, identifier_data["value"], events)
         else:
             identifier_data["type_id"] = resolve_identifier_type(conn, identifier_data["type_id"], events)
-
+    #CHECK IF PRODUCT EXISTS
     product_id = get_existing_product(cursor, data)
     if not product_id:
         product_id = insert_product(cursor, data)

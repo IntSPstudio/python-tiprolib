@@ -16,6 +16,7 @@ from core.products import get_or_create_complete_product
 from core.categories import get_or_create_cat
 from core.organizations import get_or_create_org
 from core.locations import get_or_create_loc
+from core.identifiers import get_by_identifier
 
 #COMMAND LINE INTERFACE
 def run_cli(conn):
@@ -30,6 +31,7 @@ def run_cli(conn):
         printer("            *** Welcome! Available commands ***")
         printer("")
         printer(" -Products")
+        printer(" -Identifiers")
         printer(" -Inventory")
         printer(" -Organizations")
         printer(" -Locations")
@@ -54,6 +56,25 @@ def run_cli(conn):
                     #CREATING CONTENT
                     output = create_dictionary_wiz("add_complete_product")
                     results = get_or_create_complete_product(conn,output)
+        #
+        # IDENTIFIERS
+        #
+        if master == "identifiers" or master == "code" or master == "gtin":
+            if len(sys.argv) < 3:
+                printer("")
+                printer("/Products/Identifiers")
+                printer("            *** Welcome! Available commands ***")
+                printer("")
+                printer(" -Get CODE")
+            else:
+                #GET
+                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3]:
+                    if sys.argv[3] == "all":
+                        output = get_all(conn, "identifiers")
+                        results = print_crud_data(output)
+                    else:
+                        output = get_by_identifier(conn, sys.argv[3])
+                        results = output["results"]
         #
         # CATEGORIES
         #
