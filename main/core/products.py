@@ -6,7 +6,7 @@
 
 #SETTINGS
 import json
-from core.categories import get_or_create_cat
+from core.categories import get_or_create_cat, link_product_to_category
 from core.identifiers import generate_internal_code, get_or_create_type
 from core.organizations import get_or_create_org
 from core.settings import ALLOWED_FIELDS_PRD, FIELD_ALIAS, PRODUCT_UPDATE_FIELDS
@@ -81,6 +81,13 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
         events.append("Product created")
     else:
         events.append("Product exists")
+    #CATEGORIES
+    if input_dict.get("c1"):
+        c1 = resolve_category(conn, input_dict.get("c1"), events)
+        link_product_to_category(conn, product_id, c1)
+        if input_dict.get("c2"):
+            c2 = resolve_category(conn, input_dict.get("c2"), events)
+            link_product_to_category(conn, product_id, c2)
     #INTERNAL IDENTIFIER CHECK 2
     identifier_id = None
     if identifier_data.get("value"):
@@ -111,14 +118,12 @@ def get_product(conn, product_id: int):
     cursor = conn.cursor()
     cursor.execute(
         f"""
-        SELECT
-            p.*,
-            o.name AS brand_name,
-            c.name AS category_name,
+        SELECT 
+            p.*, 
+            o.name AS brand_name, 
             dt.code AS deposit_code
         FROM products p
         LEFT JOIN organizations o ON p.brand_id = o.id
-        LEFT JOIN categories c ON p.category_id = c.id
         LEFT JOIN deposit_types dt ON p.deposit_type_id = dt.id
         WHERE p.id = {PLACEHOLDER}
         """,
@@ -129,7 +134,10 @@ def get_product(conn, product_id: int):
         return {"error": "product_not_found"}
     columns = [column[0] for column in cursor.description]
     product = dict(zip(columns, row))
+    #GET IDENTIFIERS
     product["identifiers"] = get_product_identifiers(conn, product_id)
+    #GET CATEGORIES
+    product["categories"] = get_product_categories(conn, product_id)
     return {"result": product}
 
 #GET PRODUCT IDENTIFIERS
@@ -148,8 +156,23 @@ def get_product_identifiers(conn, product_id: int):
     columns = [column[0] for column in cursor.description]
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+#GET PRODUCT CATEGORIES
+def get_product_categories(conn, product_id: int):
+    cursor = conn.cursor()
+    cursor.execute(
+        f"""
+        SELECT c.id, c.name, c.info
+        FROM categories c
+        JOIN route_categories rc ON c.id = rc.category_id
+        WHERE rc.product_id = {PLACEHOLDER}
+        """,
+        (product_id,),
+    )
+    columns = [column[0] for column in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
 #SEARCH PRODUCTS
-def search_products(conn, query: str):
+def search_products(conn, query: str, slimit: int =50):
     query = str(query or "").strip()
     if not query:
         return {"results": []}
@@ -165,12 +188,11 @@ def search_products(conn, query: str):
             p.weight_default,
             p.weight_unit,
             p.status_id,
-            o.name AS brand_name,
-            c.name AS category_name,
-            i.value AS identifier
+            o.name AS brand_name
         FROM products p
         LEFT JOIN organizations o ON p.brand_id = o.id
-        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN route_categories rc ON p.id = rc.product_id
+        LEFT JOIN categories c ON rc.category_id = c.id
         LEFT JOIN identifiers i ON p.id = i.product_id
         WHERE
             p.name LIKE {PLACEHOLDER}
@@ -178,12 +200,22 @@ def search_products(conn, query: str):
             OR c.name LIKE {PLACEHOLDER}
             OR i.value = {PLACEHOLDER}
         ORDER BY p.id DESC
-        LIMIT 50
+        LIMIT {slimit}
         """,
         (like_value, like_value, like_value, query),
     )
     columns = [column[0] for column in cursor.description]
-    return {"results": [dict(zip(columns, row)) for row in cursor.fetchall()]}
+    rows = cursor.fetchall()
+    results = []
+    for row in rows:
+        product = dict(zip(columns, row))
+        product_id = product["id"]
+        #GET IDENTIFIERS
+        product["identifiers"] = get_product_identifiers(conn, product_id)
+        #GET CATEGORIES
+        product["categories"] = get_product_categories(conn, product_id)
+        results.append(product)
+    return {"results": results}
 
 #UPDATE PRODUCT
 def update_product(conn, product_id: int, input_dict: dict):
@@ -194,11 +226,9 @@ def update_product(conn, product_id: int, input_dict: dict):
     data = {key: value for key, value in data.items() if key in PRODUCT_UPDATE_FIELDS and value is not None}
     if not data:
         return {"error": "no_valid_fields", "events": events}
-
+    #CHOICES
     if data.get("brand_id"):
         data["brand_id"] = resolve_organization(conn, data["brand_id"], events)
-    if data.get("category_id"):
-        data["category_id"] = resolve_category(conn, data["category_id"], events)
     if isinstance(data.get("qty_default"), str):
         qty = parse_qty_input(data["qty_default"])
         data["qty_default"] = qty["value"]
@@ -209,7 +239,7 @@ def update_product(conn, product_id: int, input_dict: dict):
         data["weight_unit"] = data.get("weight_unit") or weight["unit"] or "kg"
     if isinstance(data.get("extra"), dict):
         data["extra"] = json.dumps(data["extra"], ensure_ascii=False)
-
+    #UPDATE
     cursor = conn.cursor()
     assignments = [f"{field} = {PLACEHOLDER}" for field in data]
     assignments.append("updated = CURRENT_TIMESTAMP")
@@ -237,7 +267,6 @@ def normal_product_data(input_dict, events):
         data[field] = value.strip() if isinstance(value, str) else value
     data.pop("id", None)
     data.pop("status_id", None)
-
     return data
 
 def normal_identifier_data(input_dict, events):
@@ -252,7 +281,6 @@ def normal_identifier_data(input_dict, events):
             data["info"] = value
     if data["value"] == "":
         data["value"] = None
-
     return data
 
 def map_field(field):

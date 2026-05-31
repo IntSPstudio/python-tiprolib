@@ -66,7 +66,7 @@ FIELD_ALIAS = {
             "help": "Default quantity unit"
         },
         "w": {
-            "table": "products",
+            "table":"products",
             "name": "weight_default",
             "help": "Expected product weight in grams"
         },
@@ -74,6 +74,16 @@ FIELD_ALIAS = {
             "table":"products",
             "name": "info",
             "help": "Additional info"
+        },
+        "c1": {
+            "table":"route_categories",
+            "name": "category_id",
+            "help": "Additional category 1"
+        },
+        "c2": {
+            "table":"route_categories",
+            "name": "category_id",
+            "help": "Additional category 2"
         },
         "cn": {
             "table":"identifiers",
@@ -86,7 +96,7 @@ FIELD_ALIAS = {
             "help": "Identifier code type"
         },
         "ci": {
-            "table":"identifiers",
+            "table": "identifiers",
             "name": "info",
             "help": "Additional info"
         }
@@ -134,13 +144,14 @@ ALLOWED_FIELDS = {
         "identifier",
         "type",
         "info",
-        "status_id",
+        "status_id"
     },
     "identifier_types": {
         "id",
         "code",
         "name",
-        "info"
+        "info",
+        "status_id"
     },
     "stock": {
         "id",
@@ -164,12 +175,19 @@ ALLOWED_FIELDS = {
         "id",
         "code",
         "info",
-        "location_id"
+        "location_id",
+        "status_id"
+    },
+    "route_categories": {
+        "product_id",
+        "category_id",
+        "status_id"
     },
     "categories": {
         "id",
         "name",
-        "info"
+        "info",
+        "status_id"
     },
     "locations": {
         "id",
@@ -178,12 +196,14 @@ ALLOWED_FIELDS = {
         "street_address",
         "postal_code",
         "city",
-        "info"
+        "info",
+        "status_id"
     },
     "organizations": {
         "id",
         "name",
-        "info"
+        "info",
+        "status_id"
     }
 }
 

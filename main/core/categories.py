@@ -37,3 +37,21 @@ def get_or_create_cat(conn, name, description=None):
                 return {"id": row[0]}
             raise
     return {"error":"Invalid name"}
+
+#CREATE LINK PRODUCT - CATEGORY
+def link_product_to_category(conn, product_id: int, category_id: int):
+    if product_id and category_id:
+        cursor = conn.cursor()
+        query = f"""
+            INSERT OR IGNORE INTO route_categories (product_id, category_id)
+            VALUES ({adpt.PLACEHOLDER}, {adpt.PLACEHOLDER})
+        """
+        try:
+            cursor.execute(query, (product_id, category_id))
+            conn.commit()
+            if cursor.rowcount > 0:
+                return {"status": "linked", "product_id": product_id, "category_id": category_id}
+            else:
+                return {"status": "already_exists", "product_id": product_id, "category_id": category_id}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}

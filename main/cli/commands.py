@@ -12,7 +12,7 @@ from enums.status import Status
 from cli.dictionary import create_dictionary_wiz
 from core.crud import get_all
 from core.crud import update_status
-from core.products import get_or_create_complete_product
+from core.products import get_or_create_complete_product, get_product, search_products
 from core.categories import get_or_create_cat
 from core.organizations import get_or_create_org
 from core.locations import get_or_create_loc
@@ -51,8 +51,16 @@ def run_cli(conn):
                 printer("")
                 printer(" -Create")
             else:
+                #GET ID
+                if len(sys.argv) == 5 and sys.argv[2] == "get" and sys.argv[3] == "id" and sys.argv[4]:
+                    output = get_product(conn, sys.argv[4])
+                    results = output["result"]
+                #SEARCH
+                elif len(sys.argv) == 4 and sys.argv[2] == "lookup" and sys.argv[3]:
+                    output = search_products(conn, sys.argv[3])
+                    results = output["results"]
                 #CREATE PRODUCT
-                if len(sys.argv) == 3 and sys.argv[2] == "create":
+                elif len(sys.argv) == 3 and sys.argv[2] == "create":
                     #CREATING CONTENT
                     output = create_dictionary_wiz("add_complete_product")
                     results = get_or_create_complete_product(conn,output)

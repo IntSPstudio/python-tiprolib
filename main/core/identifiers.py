@@ -48,7 +48,7 @@ def get_or_create_iden(conn, input: dict):
 
 #SCANNER
 def get_by_identifier(conn, identifier: str):
-    identifier.strip().lower()
+    identifier.strip().lower().replace(" ", "")
     cursor = conn.cursor()
     query = f"""
         SELECT p.*, o.name as brand_name, i.value as identifier_value

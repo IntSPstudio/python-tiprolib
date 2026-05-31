@@ -30,7 +30,7 @@ def create_dictionary_wiz(help: str = None):
                 if table:
                     printer("    Options:")
                     if help == "add_complete_product":
-                        table_w = 12
+                        table_w = 16
                         alias_w = 8
                         name_w = 15
                         printer("")
