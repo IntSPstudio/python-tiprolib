@@ -39,8 +39,8 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
     if data.get("brand_id"):
         data["brand_id"] = resolve_organization(conn, data["brand_id"], events)
     #GET CATEGORY
-    if data.get("category_id"):
-        data["category_id"] = resolve_category(conn, data["category_id"], events)
+    #if data.get("category_id"):
+    #    data["category_id"] = resolve_category(conn, data["category_id"], events)
     #QTY RULES
     if isinstance(data.get("qty_default"), str):
         qty = parse_qty_input(data["qty_default"])
@@ -56,19 +56,24 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
         data["weight_default"] = weight["value"]
         data["weight_unit"] = data.get("weight_unit") or weight["unit"] or "g"
     #NAME CHECK
+    #if not data.get("name"):
+    #    data["name"] = f"Product {identifier_data['value']}"
     if not data.get("name"):
-        data["name"] = f"Product {identifier_data['value']}"
-        events.append("Product name generated from identifier")
-    #INTERNAL IDENTIFIER CHECK
-    if cre_ide == 0:
-        if not identifier_data.get("value"):
+        suffix = identifier_data.get("value") or "Unnamed"
+        data["name"] = f"Product {suffix}"
+        #events.append("Product name generated from identifier")
+    #INTERNAL IDENTIFIER CHECK 1
+    if not identifier_data.get("value"):
+        if cre_ide != 0:
             identifier_data["value"] = generate_internal_code(conn)
             identifier_data["type_id"] = resolve_identifier_type(conn, "internal", events)
             events.append(f"Generated internal identifier: {identifier_data['value']}")
-        elif not identifier_data.get("type_id"):
-            identifier_data["type_id"] = guess_identifier_type(conn, identifier_data["value"], events)
         else:
-            identifier_data["type_id"] = resolve_identifier_type(conn, identifier_data["type_id"], events)
+            events.append("No identifier provided, skipping identifier creation")
+    elif not identifier_data.get("type_id"):
+        identifier_data["type_id"] = guess_identifier_type(conn, identifier_data["value"], events)
+    else:
+        identifier_data["type_id"] = resolve_identifier_type(conn, identifier_data["type_id"], events)
     #CHECK IF PRODUCT EXISTS
     product_id = get_existing_product(cursor, data)
     if not product_id:
@@ -76,26 +81,28 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
         events.append("Product created")
     else:
         events.append("Product exists")
-
+    #INTERNAL IDENTIFIER CHECK 2
     identifier_id = None
-    if existing_identifier:
-        identifier_id = existing_identifier["id"]
-        cursor.execute(
-            f"UPDATE identifiers SET product_id = {PLACEHOLDER}, updated = CURRENT_TIMESTAMP WHERE id = {PLACEHOLDER}",
-            (product_id, identifier_id),
-        )
-        events.append("Existing identifier linked to product")
-    else:
-        if cre_ide == 0:
+    if identifier_data.get("value"):
+        if existing_identifier:
+            identifier_id = existing_identifier["id"]
+            cursor.execute(
+                f"UPDATE identifiers SET product_id = {PLACEHOLDER}, updated = CURRENT_TIMESTAMP WHERE id = {PLACEHOLDER}",
+                (product_id, identifier_id),
+            )
+            events.append("Existing identifier linked to product")
+        else:
             identifier_id = insert_identifier(cursor, product_id, identifier_data)
             events.append("Identifier created")
-
+    else:
+        events.append("Product created without identifier")
+    #SEND IT
     conn.commit()
     return {
         "status": "ok",
         "product_id": product_id,
         "identifier_id": identifier_id,
-        "identifier": identifier_data["value"],
+        "identifier": identifier_data.get("value"),
         "events": events,
     }
 

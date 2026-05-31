@@ -146,7 +146,6 @@ def create_sqlite(cursor):
         qty_unit TEXT DEFAULT 'pcs',
         weight_default REAL,
         weight_unit TEXT DEFAULT 'g',
-        category_id INTEGER,
         deposit_type_id INTEGER DEFAULT 1,
         info TEXT,
         note TEXT,
@@ -155,8 +154,19 @@ def create_sqlite(cursor):
         updated DATETIME DEFAULT CURRENT_TIMESTAMP,
         extra TEXT,
         FOREIGN KEY(brand_id) REFERENCES organizations(id),
-        FOREIGN KEY(category_id) REFERENCES categories(id),
         FOREIGN KEY(deposit_type_id) REFERENCES deposit_types(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS route_categories (
+        product_id INTEGER,
+        category_id INTEGER,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (product_id, category_id),
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
     )
     """)
     cursor.execute("""

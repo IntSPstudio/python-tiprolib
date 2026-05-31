@@ -8,6 +8,7 @@
 ALLOWED_TABLES = [
     "statuses",
     "organizations",
+    "route_categories",
     "categories",
     "locations",
     "deposit_types",
@@ -69,11 +70,6 @@ FIELD_ALIAS = {
             "name": "weight_default",
             "help": "Expected product weight in grams"
         },
-        "c": {
-            "table":"products",
-            "name": "category_id",
-            "help": "Name or ID"
-        },
         "i": {
             "table":"products",
             "name": "info",
@@ -123,7 +119,6 @@ ALLOWED_FIELDS = {
     "products": {
         "id",
         "brand_id",
-        "category_id",
         "name",
         "qty_default",
         "qty_unit",
