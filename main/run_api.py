@@ -1,6 +1,6 @@
 #|==============================================================|#
 # Made by IntSPstudio
-# TIPROLIB PDB
+# TIPROLIB API
 # Thank you for using this plugin!
 # Version: 0.0.0.0
 # ID: 980001023
@@ -10,7 +10,7 @@
 from api.app import create_app
 from config import DEBUG
 
-#MAIN
+#MAIN LOOP
 def main():
     app = create_app()
     app.run(

@@ -17,6 +17,7 @@ from core.categories import get_or_create_cat
 from core.organizations import get_or_create_org
 from core.locations import get_or_create_loc
 from core.identifiers import get_by_identifier
+from utils.textutils import boring_text
 
 #COMMAND LINE INTERFACE
 def run_cli(conn):
@@ -49,8 +50,14 @@ def run_cli(conn):
                 printer("/Products")
                 printer("            *** Welcome! Available commands ***")
                 printer("")
+                printer(" -Get ID")
+                printer(" -Lookup QUERY")
                 printer(" -Create")
             else:
+                #GET ALL PRODUCTS WITHOUT ADD INFO
+                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
+                    output = get_all(conn, "products")
+                    results = print_crud_data(output)
                 #GET ID
                 if len(sys.argv) == 5 and sys.argv[2] == "get" and sys.argv[3] == "id" and sys.argv[4]:
                     output = get_product(conn, sys.argv[4])

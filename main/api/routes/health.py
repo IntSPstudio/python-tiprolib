@@ -18,7 +18,8 @@ def api_index():
         "routes": {
             "api": "/api",
             "health": "/api/health",
-            "products": "/api/products/",
+            "organizations": "/api/organizations",
+            "products": "/api/products/"
         },
     })
 

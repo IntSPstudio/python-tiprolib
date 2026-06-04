@@ -22,9 +22,9 @@ def create_database(conn):
 def seed_defaults(conn):
     cursor = conn.cursor()
     #ORGANIZATION INI
-    insert_default(cursor, "organizations", 1, {"name": "default", "info": "Default organization"})
-    insert_default(cursor, "organizations", 2, {"name": "undefined", "info": "Undefined organization"})
-    insert_default(cursor, "organizations", 3, {"name": "cash_customer", "info": "Default cash customer"})
+    insert_default(cursor, "organizations", 1, {"key": "default", "name": "Default", "info": "Default organization"})
+    insert_default(cursor, "organizations", 2, {"key": "undefined", "name": "Undefined", "info": "Undefined organization"})
+    insert_default(cursor, "organizations", 3, {"key": "cash_customer", "name": "Cash customer", "info": "Default cash customer"})
     #CATEGORY
     insert_default(cursor, "categories", 1, {"name": "default", "info": "Default category"})
     #WEBSITE USERS 1
@@ -91,13 +91,12 @@ def create_sqlite(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS organizations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
+        key TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
         info TEXT,
-        master_id INTEGER,
         status_id INTEGER DEFAULT 1,
         created DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(master_id) REFERENCES organizations(id)
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
     cursor.execute("""
@@ -192,6 +191,17 @@ def create_sqlite(cursor):
         updated DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(product_id) REFERENCES products(id),
         FOREIGN KEY(type_id) REFERENCES identifier_types(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS extra_field_definitions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key_name TEXT UNIQUE NOT NULL,
+        display_name TEXT NOT NULL,
+        data_type TEXT DEFAULT 'text',
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
     cursor.execute("""
@@ -328,6 +338,18 @@ def create_sqlite(cursor):
         FOREIGN KEY(sale_id) REFERENCES sales(id),
         FOREIGN KEY(product_id) REFERENCES products(id),
         FOREIGN KEY(identifier_id) REFERENCES identifiers(id)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS journal (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        dated TEXT DEFAULT CURRENT_TIMESTAMP,
+        title TEXT,
+        body TEXT NOT NULL,
+        extra TEXT,
+        status_id INTEGER DEFAULT 1,
+        created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
     cursor.execute("""

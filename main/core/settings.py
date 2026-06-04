@@ -15,6 +15,7 @@ ALLOWED_TABLES = [
     "products",
     "identifier_types",
     "identifiers",
+    "extra_field_definitions",
     "stock_slots",
     "stock",
     "stock_logs",
@@ -23,6 +24,7 @@ ALLOWED_TABLES = [
     "purchase_lines",
     "sales",
     "sale_lines",
+    "journal",
     "web_users"
 ]
 
@@ -93,7 +95,7 @@ FIELD_ALIAS = {
         "ct": {
             "table":"identifiers",
             "name": "type_id",
-            "help": "Identifier code type"
+            "help": "Identifier code type (UPC, EAN, GTIN, SKU etc)"
         },
         "ci": {
             "table": "identifiers",

@@ -236,9 +236,7 @@ def update_product(conn, product_id: int, input_dict: dict):
     if isinstance(data.get("weight_default"), str):
         weight = parse_qty_input(data["weight_default"])
         data["weight_default"] = weight["value"]
-        data["weight_unit"] = data.get("weight_unit") or weight["unit"] or "kg"
-    if isinstance(data.get("extra"), dict):
-        data["extra"] = json.dumps(data["extra"], ensure_ascii=False)
+        data["weight_unit"] = data.get("weight_unit") or weight["unit"] or "g"
     #UPDATE
     cursor = conn.cursor()
     assignments = [f"{field} = {PLACEHOLDER}" for field in data]
@@ -251,6 +249,27 @@ def update_product(conn, product_id: int, input_dict: dict):
         return {"error": "product_not_found", "events": events}
     conn.commit()
     return {"status": "ok", "product_id": product_id, "events": events}
+
+#ADDITIONAL INFO KEYS
+def resolve_extra_field(conn, key_name: str, display_name: str = None):
+    cursor = conn.cursor()
+    key_name = key_name.strip().lower().replace(" ", "_")
+    #GET DATA
+    cursor.execute(
+        f"SELECT key_name FROM extra_field_definitions WHERE key_name = {PLACEHOLDER}", 
+        (key_name,)
+    )
+    row = cursor.fetchone()
+    #CREATE DATA
+    if not row:
+        d_name = display_name or key_name.capitalize()
+        cursor.execute(
+            f"INSERT INTO extra_field_definitions (key_name, display_name) VALUES ({PLACEHOLDER}, {PLACEHOLDER})",
+            (key_name, d_name)
+        )
+        conn.commit()
+        return key_name
+    return row[0]
 
 #
 # FOR SYSTEM
