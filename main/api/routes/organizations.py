@@ -5,14 +5,14 @@
 #|==============================================================|#
 
 #SETTINGS
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from database import get_conn
 from core.crud import get_all, get_by_id
-from core.organizations import get_or_create_org
+from core.organizations import get_organization_by_key
+
 organizations_bp = Blueprint("organizations", __name__)
 
-#
-@organizations_bp.get("/api/organizations")
+#GET ALL
 def list_org():
     conn = get_conn()
     try:
@@ -20,14 +20,27 @@ def list_org():
     finally:
         conn.close()
 
-@organizations_bp.get("/api/organizations/<org_name>")
-def get_org_by_id(org_name):
+#GET ONE
+def get_org_by_key(org_name):
     conn = get_conn()
     try:
-        org_id = get_or_create_org(conn, org_name, "", 0)
-        if org_id:
-            result = get_by_id(conn, "organizations", org_id)
-            status_code = 404 if result.get("error") else 200
-            return jsonify(result), status_code
+        result = get_organization_by_key(conn, org_name)
+        status_code = 404 if "error" in result else 200
+        return jsonify(result), status_code
     finally:
         conn.close()
+
+#ALL ALIASES OPTIONS
+URL_ALIASES = ["org", "organization", "organizations", "brand", "brands"]
+for alias in URL_ALIASES:
+    organizations_bp.add_url_rule(
+        f"/api/{alias}",
+        view_func=list_org,
+        methods=["GET"],
+        strict_slashes=False
+    )
+    organizations_bp.add_url_rule(
+        f"/api/{alias}/<org_name>",
+        view_func=get_org_by_key,
+        methods=["GET"]
+    )

@@ -13,7 +13,7 @@ from utils.textutils import boring_text
 def get_or_create_org(conn, raw_name, description=None, mode: int = 1):
     #RULES
     raw_name = boring_text(raw_name,0)
-    key = raw_name.strip().lower()
+    key = boring_text(raw_name,3)
     if not raw_name:
         return {"error": "Invalid name"}
     #COMMAND
@@ -31,7 +31,7 @@ def get_or_create_org(conn, raw_name, description=None, mode: int = 1):
                 INSERT INTO organizations (key, name, info)
                 VALUES ({adpt.PLACEHOLDER}, {adpt.PLACEHOLDER}, {adpt.PLACEHOLDER})
             """
-            cursor.execute(command, (key, raw_name, description))
+            cursor.execute(command, (key, raw_name, boring_text(description,2)))
             conn.commit()
             return {"id": cursor.lastrowid}
         #ERROR
@@ -45,3 +45,26 @@ def get_or_create_org(conn, raw_name, description=None, mode: int = 1):
                 return {"id": row[0]}
             raise
     return {"error": "Not found and mode=0"}
+
+#GET ORGANIZATION BY KEY
+def get_organization_by_key(conn, org_key: str):
+    #RULES
+    clean_key = boring_text(org_key, 3)
+    if not clean_key:
+        return {"error": "invalid_key"}
+    #GET
+    cursor = conn.cursor()
+    cursor.execute(
+        f"""
+        SELECT id, key, name, info, status_id, created, updated 
+        FROM organizations 
+        WHERE key = {adpt.PLACEHOLDER}
+        """,
+        (clean_key,)
+    )
+    row = cursor.fetchone()
+    #NOT
+    if not row:
+        return {"error": "organization_not_found"}
+    columns = [column[0] for column in cursor.description]
+    return {"result": dict(zip(columns, row))}

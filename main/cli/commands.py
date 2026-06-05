@@ -17,7 +17,6 @@ from core.categories import get_or_create_cat
 from core.organizations import get_or_create_org
 from core.locations import get_or_create_loc
 from core.identifiers import get_by_identifier
-from utils.textutils import boring_text
 
 #COMMAND LINE INTERFACE
 def run_cli(conn):
