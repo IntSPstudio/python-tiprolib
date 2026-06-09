@@ -112,7 +112,8 @@ def create_sqlite(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS locations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
+        key TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
         organization_id INTEGER DEFAULT 1,
         street_address TEXT,
         postal_code TEXT,

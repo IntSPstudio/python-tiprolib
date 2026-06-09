@@ -77,6 +77,13 @@ def run_cli(conn):
                     # 5: Price
                     output = add_price(conn, sys.argv[4], sys.argv[5])
                     results = output
+                #PRICING
+                if len(sys.argv) == 7 and sys.argv[2] == "add" and sys.argv[3] == "price" and sys.argv[4] and sys.argv[5] and sys.argv[6]:
+                    # 4: Product id or identifier
+                    # 5: Price
+                    # 6: Location
+                    output = add_price(conn, sys.argv[4], sys.argv[5], sys.argv[6])
+                    results = output
         #
         # IDENTIFIERS
         #
