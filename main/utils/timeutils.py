@@ -7,7 +7,7 @@
 #SETTINGS
 from datetime import datetime
 
-#BASIC TIME
+#BASIC TIME (This feature eventually go away?)
 def currentdatetime(mode: int = 0):
     if mode == 0:
         now = str(datetime.now().isoformat("#", "auto"))

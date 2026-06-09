@@ -5,7 +5,6 @@
 #|==============================================================|#
 
 #SETTINGS
-import json
 from core.categories import get_or_create_cat, link_product_to_category
 from core.identifiers import generate_internal_code, get_or_create_type
 from core.organizations import get_or_create_org

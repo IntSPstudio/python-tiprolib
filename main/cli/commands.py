@@ -13,6 +13,7 @@ from cli.dictionary import create_dictionary_wiz
 from core.crud import get_all
 from core.crud import update_status
 from core.products import get_or_create_complete_product, get_product, search_products
+from core.pricing import add_price
 from core.categories import get_or_create_cat
 from core.organizations import get_or_create_org
 from core.locations import get_or_create_loc
@@ -70,6 +71,12 @@ def run_cli(conn):
                     #CREATING CONTENT
                     output = create_dictionary_wiz("add_complete_product")
                     results = get_or_create_complete_product(conn,output)
+                #PRICING
+                if len(sys.argv) == 6 and sys.argv[2] == "add" and sys.argv[3] == "price" and sys.argv[4] and sys.argv[5]:
+                    # 4: Product id or identifier
+                    # 5: Price
+                    output = add_price(conn, sys.argv[4], sys.argv[5])
+                    results = output
         #
         # IDENTIFIERS
         #

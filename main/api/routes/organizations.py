@@ -7,7 +7,7 @@
 #SETTINGS
 from flask import Blueprint, jsonify
 from database import get_conn
-from core.crud import get_all, get_by_id
+from core.crud import get_all
 from core.organizations import get_organization_by_key
 
 organizations_bp = Blueprint("organizations", __name__)

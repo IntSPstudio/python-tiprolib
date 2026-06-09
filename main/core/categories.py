@@ -12,7 +12,7 @@ from utils.textutils import boring_text
 #GET OR CREATE
 def get_or_create_cat(conn, name, description=None):
     #RULES
-    name = boring_text(name,0)
+    name = boring_text(name,3)
     if name:
         #TRY
         cursor = conn.cursor()
@@ -25,7 +25,7 @@ def get_or_create_cat(conn, name, description=None):
         #CREATE
         try:
             command = f"INSERT INTO categories (name, info) VALUES ({adpt.PLACEHOLDER}, {adpt.PLACEHOLDER})"
-            cursor.execute(command,(name, description))
+            cursor.execute(command,(name, boring_text(description,2)))
             conn.commit()
             return {"id": cursor.lastrowid}
         #ERROR

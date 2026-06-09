@@ -9,6 +9,8 @@ from flask import Flask
 from api.routes.health import health_bp
 from api.routes.web import web_bp
 from api.routes.organizations import organizations_bp
+from api.routes.categories import categories_bp
+from api.routes.products import products_bp
 from database import get_conn
 from database.setup import initialize_basics
 
@@ -21,10 +23,11 @@ def create_app():
     )
 
     initialize_database() #CONNECT
-    app.register_blueprint(health_bp)
+    app.register_blueprint(health_bp) #BASIC
     app.register_blueprint(web_bp) #WEBSITE
     app.register_blueprint(organizations_bp) #ORGANIZATIONS
-
+    app.register_blueprint(categories_bp) #CATEGORIES
+    app.register_blueprint(products_bp) #PRODUCTS
     return app
 
 #CONNECT
