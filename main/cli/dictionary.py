@@ -5,7 +5,7 @@
 #|==============================================================|#
 
 #SETTINGS
-from utils.printer import printer, print_crud_data
+from utils.printer import printer
 from core.settings import FIELD_ALIAS
 
 #MAIN
@@ -23,12 +23,13 @@ def create_dictionary_wiz(help: str = None):
     #ADD DATA
     while loop == 1:
         while continuity == 1:
-            raw_input = input("=] Add new: ")
+            raw_input = input("Add new: ")
             if str.lower(raw_input) == "exit" or str.lower(raw_input) == "quit":
                 continuity =0
             elif str.lower(raw_input) == "info" or str.lower(raw_input) == "help":
                 if table:
-                    printer("    Options:")
+                    printer("")
+                    printer("  Options:")
                     if help == "add_complete_product":
                         table_w = 16
                         alias_w = 8
@@ -40,11 +41,11 @@ def create_dictionary_wiz(help: str = None):
                             alias_key = table
                             field_name = FIELD_ALIAS["add_complete_product"][table]["name"]
                             field_info = FIELD_ALIAS["add_complete_product"][table]["help"]
-                            printer(f"    {table_name:<{table_w}} | {alias_key:<{alias_w}} | {field_name:<{name_w}} |  {field_info}")
+                            printer(f"  {table_name:<{table_w}} | {alias_key:<{alias_w}} | {field_name:<{name_w}} |  {field_info}")
                         printer("")
                     else:
                         for key, value in table.items():
-                            printer(f"    {key}: {value}")
+                            printer(f"  {key}: {value}")
             else:
                 parts = raw_input.split("=", 1)
                 if len(parts) != 2:
@@ -55,13 +56,13 @@ def create_dictionary_wiz(help: str = None):
                 data[key] = value
         #SHOW AND CONFIRM DATA
         if data:
-            print("=]")
+            print("")
             printer("Selected data:")
             for key, value in data.items():
                 output = str(key) +" = "+ str(value)
                 printer(output)
-            print("=]")
-            raw_input = input("=] Send it! Yes or no? (Or 'edit') ")
+            print("")
+            raw_input = input("Send it! Yes or no? (Or 'edit') ")
             #PROCESS
             if str.lower(raw_input) == "yes" or str.lower(raw_input) == "y":
                 #START FUNCTION

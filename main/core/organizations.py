@@ -67,4 +67,4 @@ def get_organization_by_key(conn, org_key: str):
     if not row:
         return {"error": "organization_not_found"}
     columns = [column[0] for column in cursor.description]
-    return {"result": dict(zip(columns, row))}
+    return {"results": dict(zip(columns, row))}

@@ -50,9 +50,10 @@ def run_cli(conn):
                 printer("/Products")
                 printer("            *** Welcome! Available commands ***")
                 printer("")
-                printer(" -Get ID")
+                printer(" -Get ID/ALL")
                 printer(" -Lookup QUERY")
                 printer(" -Create")
+                printer(" -Add price ID/IDENTIFIER PRICE LOCATION")
             else:
                 #GET ALL PRODUCTS WITHOUT ADD INFO
                 if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
@@ -106,7 +107,7 @@ def run_cli(conn):
         #
         # CATEGORIES
         #
-        if master == "categories" or master == "categorie" or master == "cat":
+        if master == "categories" or master == "category" or master == "cat":
             if len(sys.argv) < 3:
                 printer("")
                 printer("/Categories")
@@ -119,7 +120,7 @@ def run_cli(conn):
                 if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
                     output = get_all(conn, "categories")
                     results = print_crud_data(output)
-                #GET OR CREATE ORGANIZATIONS
+                #GET OR CREATE CATEGORIES
                 elif len(sys.argv) == 4 and sys.argv[2] == "create" and sys.argv[3]:
                     results = get_or_create_cat(conn,sys.argv[3],"")
                 elif len(sys.argv) == 5 and sys.argv[2] == "create" and sys.argv[3] and sys.argv[4]:
@@ -167,7 +168,7 @@ def run_cli(conn):
         #
         # LOCATIONS
         #
-        elif master == "locations" or master == "loc":
+        elif master == "locations" or master == "loc" or master == "places":
             if len(sys.argv) < 3:
                 printer("")
                 printer("/Locations")
@@ -181,7 +182,7 @@ def run_cli(conn):
                 if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
                     output = get_all(conn, "locations")
                     results = print_crud_data(output)
-                #GET OR CREATE ORGANIZATIONS
+                #GET OR CREATE LOCATIONS
                 if len(sys.argv) == 3 and sys.argv[2] == "create":
                     output = create_dictionary_wiz("add_locations")
                     results = get_or_create_loc(conn,output)

@@ -9,7 +9,7 @@ from os import get_terminal_size as cli_size
 
 #CLI INTERFACE PRINT
 def printer(text: str):
-    text = "=] " + str(text)
+    #text = "=] " + str(text)
     try:
         limit = cli_size().columns - 1
         if len(text) > limit:

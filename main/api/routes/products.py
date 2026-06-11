@@ -39,7 +39,7 @@ def list_and_search_products():
         conn.close()
 
 #ALL ALIASES OPTIONS
-URL_ALIASES = ["products", "product", "pdb"]
+URL_ALIASES = ["products", "product", "prd"]
 
 for alias in URL_ALIASES:
     products_bp.add_url_rule(
