@@ -52,6 +52,7 @@ def seed_defaults(conn):
         (5, "isbn", "ISBN"),
         (6, "pn", "Part number"),
         (7, "sn", "Serial number"),
+        (8, "alias", "Alternative name")
     ]:
         insert_default(cursor, "identifier_types", type_id, {"value": value, "name": name})
     #DEPBOSIT (Aka. Pantti)
@@ -141,6 +142,7 @@ def create_sqlite(cursor):
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         brand_id INTEGER DEFAULT 1,
+        key TEXT NOT NULL,
         name TEXT NOT NULL,
         qty_default REAL DEFAULT 1,
         qty_unit TEXT DEFAULT 'pcs',

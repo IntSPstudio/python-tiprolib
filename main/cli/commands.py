@@ -10,12 +10,11 @@ from utils.printer import printer, print_crud_data
 from utils.prompt import cli_screen_clear
 from enums.status import Status
 from cli.dictionary import create_dictionary_wiz
-from core.crud import get_all
-from core.crud import update_status
+from core.crud import get_all, get_by_id, update_status, update_record
 from core.products import get_or_create_complete_product, get_product, search_products
 from core.pricing import add_price
 from core.categories import get_or_create_cat
-from core.organizations import get_or_create_org
+from core.organizations import get_or_create_org, get_organization_by_key
 from core.locations import get_or_create_loc
 from core.identifiers import get_by_identifier
 
@@ -36,6 +35,7 @@ def run_cli(conn):
         printer(" -Inventory")
         printer(" -Organizations")
         printer(" -Locations")
+        printer(" -Journal")
         printer("")
     #OPTIONS
     else:
@@ -47,8 +47,7 @@ def run_cli(conn):
         if master == "product" or master == "products" or master == "prd":
             if len(sys.argv) < 3:
                 printer("")
-                printer("/Products")
-                printer("            *** Welcome! Available commands ***")
+                printer("            *** Products: Available commands ***")
                 printer("")
                 printer(" -Get ID/ALL")
                 printer(" -Lookup QUERY")
@@ -91,10 +90,9 @@ def run_cli(conn):
         if master == "identifiers" or master == "code" or master == "gtin":
             if len(sys.argv) < 3:
                 printer("")
-                printer("/Products/Identifiers")
-                printer("            *** Welcome! Available commands ***")
+                printer("            *** Identifiers: Available commands ***")
                 printer("")
-                printer(" -Get CODE")
+                printer(" -Get ALL/CODE")
             else:
                 #GET
                 if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3]:
@@ -103,16 +101,17 @@ def run_cli(conn):
                         results = print_crud_data(output)
                     else:
                         output = get_by_identifier(conn, sys.argv[3])
-                        results = output["results"]
+                        if output:
+                            results = output["results"]
         #
         # CATEGORIES
         #
         if master == "categories" or master == "category" or master == "cat":
             if len(sys.argv) < 3:
                 printer("")
-                printer("/Categories")
-                printer("            *** Welcome! Available commands ***")
+                printer("            *** Categories: Available commands ***")
                 printer("")
+                printer(" - get ALL")
                 printer(" - create NAME INFO")
                 printer("")
             else:
@@ -131,8 +130,7 @@ def run_cli(conn):
         elif master == "inventory" or master == "inv":
             if len(sys.argv) < 3:
                 printer("")
-                printer("/Inventory")
-                printer("            *** Welcome! Available commands ***")
+                printer("            *** Inventory: Available commands ***")
                 printer("")
         #
         # ORGANIZATIONS
@@ -140,17 +138,19 @@ def run_cli(conn):
         elif master == "organizations" or master == "org":
             if len(sys.argv) < 3:
                 printer("")
-                printer("/Organizations")
-                printer("            *** Welcome! Available commands ***")
+                printer("            *** Organizations: Available commands ***")
                 printer("")
-                printer(" - get all")
+                printer(" - get all/id")
                 printer(" - create NAME INFO")
                 printer(" - status STATE ID ")
                 printer("")
             else:
                 #GET ALL
-                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
-                    output = get_all(conn, "organizations")
+                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3]:
+                    if sys.argv[3] == "all":
+                        output = get_all(conn, "organizations")
+                    else:
+                        output = get_by_id(conn, "organizations", sys.argv[3])
                     results = print_crud_data(output)
                 #GET OR CREATE ORGANIZATIONS
                 elif len(sys.argv) == 4 and sys.argv[2] == "create" and sys.argv[3]:
@@ -158,34 +158,45 @@ def run_cli(conn):
                 elif len(sys.argv) == 5 and sys.argv[2] == "create" and sys.argv[3] and sys.argv[4]:
                     results = get_or_create_org(conn, sys.argv[3], sys.argv[4])
                 #STATUS
+                """
                 elif len(sys.argv) == 5 and sys.argv[2] == "status" and sys.argv[3] and sys.argv[4]:
                     if sys.argv[3] == "active":
                         results = update_status(conn, "organizations", sys.argv[4], Status.ACTIVE.value)
                     elif sys.argv[3] == "passive":
                         results = update_status(conn, "organizations", sys.argv[4], Status.PASSIVE.value)
                     elif sys.argv[3] == "delete":
-                        results = update_status(conn, "organizations", sys.argv[4], Status.DELETED.value)
+                        results = update_status(conn, "organizations", sys.argv[4], Status.DELETED.value)"""
         #
         # LOCATIONS
         #
         elif master == "locations" or master == "loc" or master == "places":
             if len(sys.argv) < 3:
                 printer("")
-                printer("/Locations")
-                printer("            *** Welcome! Available commands ***")
+                printer("            *** Locations: Available commands ***")
                 printer("")
-                printer(" - get all")
+                printer(" - get all/id")
                 printer(" - create")
                 printer("")
             else:
-                #GET ALL
-                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
-                    output = get_all(conn, "locations")
+                #GET ALL OR ONE
+                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3]:
+                    if sys.argv[3] == "all":
+                        output = get_all(conn, "locations")
+                    else:
+                        output = get_by_id(conn, "locations", sys.argv[3])
                     results = print_crud_data(output)
                 #GET OR CREATE LOCATIONS
-                if len(sys.argv) == 3 and sys.argv[2] == "create":
+                elif len(sys.argv) == 3 and sys.argv[2] == "create":
                     output = create_dictionary_wiz("add_locations")
                     results = get_or_create_loc(conn,output)
+                #EDIT BY ID
+                if len(sys.argv) == 6  and sys.argv[2] == "edit" and sys.argv[3] and sys.argv[4] and sys.argv[5]:
+                    # 3: ID
+                    # 4: KEY
+                    # 5: VALUE
+                    data = {sys.argv[4] : sys.argv[5]}
+                    output = update_record(conn, "locations", sys.argv[3], data)
+                    results = output
         #
         # OUTPUT
         #
