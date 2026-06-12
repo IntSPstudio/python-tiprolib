@@ -202,7 +202,7 @@ def search_products(conn, query: str, slimit: int = 50):
         WHERE
             p.name LIKE {PLACEHOLDER}
             OR p.key LIKE {PLACEHOLDER}
-            OR REPLACE(p.key, '_', '') LIKE {PLACEHOLDER}  -- Haku siivotulla avaimella
+            OR REPLACE(p.key, '_', '') LIKE {PLACEHOLDER}
             OR o.name LIKE {PLACEHOLDER}
             OR c.name LIKE {PLACEHOLDER}
             OR i.value = {PLACEHOLDER}
