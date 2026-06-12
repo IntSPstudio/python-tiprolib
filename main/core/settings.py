@@ -153,6 +153,8 @@ ALLOWED_FIELDS = {
         "code",
         "name",
         "info",
+        "regex_pattern",
+        "priority",
         "status_id"
     },
     "stock": {

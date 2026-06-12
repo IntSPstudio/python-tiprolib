@@ -44,17 +44,17 @@ def seed_defaults(conn):
         "must_change_password": 1,
     })
     #IDENTIFIERS
-    for type_id, value, name in [
-        (1, "internal", "Internal code"),
-        (2, "upc", "UPC"),
-        (3, "ean13", "EAN-13"),
-        (4, "ean8", "EAN-8"),
-        (5, "isbn", "ISBN"),
-        (6, "pn", "Part number"),
-        (7, "sn", "Serial number"),
-        (8, "alias", "Alternative name")
+    for type_id, value, name, regex_pattern, priority in [
+        (1, "internal", "Internal code", None, 0),
+        (2, "upc", "UPC", r"^\d{12}$", 0),
+        (5, "isbn", "ISBN", r"^\d{10}$|^97[89]\d{10}$", 110),
+        (3, "ean13", "EAN-13", r"^\d{13}$", 100),
+        (4, "ean8", "EAN-8", r"^\d{8}$", 0),
+        (6, "pn", "Part number", None, 0),
+        (7, "sn", "Serial number", None, 0),
+        (8, "alias", "Alternative name", None, 0)
     ]:
-        insert_default(cursor, "identifier_types", type_id, {"value": value, "name": name})
+        insert_default(cursor, "identifier_types", type_id, {"value": value, "name": name, "regex_pattern": regex_pattern, "priority": priority})
     #DEPBOSIT (Aka. Pantti)
     insert_default(cursor, "deposit_types", 1, {"code": "none","name": "No deposit","amount": "0","currency": "eur"})
     #SEND IT
@@ -176,6 +176,8 @@ def create_sqlite(cursor):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         value TEXT UNIQUE NOT NULL,
         name TEXT,
+        regex_pattern TEXT,
+        priority INTEGER DEFAULT 0,
         info TEXT,
         status_id INTEGER DEFAULT 1,
         created DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -187,7 +189,7 @@ def create_sqlite(cursor):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER,
         value TEXT UNIQUE NOT NULL,
-        type_id INTEGER DEFAULT 1,
+        type_id INTEGER,
         info TEXT,
         status_id INTEGER DEFAULT 1,
         created DATETIME DEFAULT CURRENT_TIMESTAMP,

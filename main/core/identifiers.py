@@ -8,6 +8,7 @@
 import sqlite3
 from random import randint
 from database.adapter import PLACEHOLDER
+import re
 
 #IF NOT CODE -> INTERNAL CODE
 def generate_internal_code(conn):
@@ -24,14 +25,22 @@ def generate_internal_code(conn):
             return code
 
 #GET OR CREATE
-def get_or_create_iden(conn, input: dict):
+def get_or_create_iden(conn, input: dict, events=None):
+    if events is None:
+        events = []
     cursor = conn.cursor()
     value = str(input.get("value", "")).strip().replace(" ", "")
     product_id = input.get("product_id")
-    type_id = input.get("type_id") or get_or_create_type(conn, "internal").get("id")
+    type_id = input.get("type_id")
     info = input.get("info")
+    internal_id = get_or_create_type(conn, "internal").get("id")
     if not value:
-        value = generate_internal_code(conn)
+        if type_id == internal_id:
+            value = generate_internal_code(conn)
+        else:
+            return {"error": "Identifier value is required"}
+    elif type_id is None:
+        type_id = guess_identifier_type(conn, value, events)
     cursor.execute(f"SELECT id, product_id FROM identifiers WHERE value = {PLACEHOLDER}", (value,))
     row = cursor.fetchone()
     if row:
@@ -48,7 +57,7 @@ def get_or_create_iden(conn, input: dict):
 
 #SCANNER
 def get_by_identifier(conn, identifier: str):
-    identifier.strip().lower().replace(" ", "")
+    identifier = str(identifier).strip().replace(" ", "")
     cursor = conn.cursor()
     query = f"""
         SELECT p.*, o.name as brand_name, i.value as identifier_value
@@ -85,3 +94,41 @@ def get_or_create_type(conn, type_input: str):
     #ERROR
     except sqlite3.Error as e:
         return {"error": str(e)}
+    
+#CHECK IF VALID
+def is_valid_barcode(code: str) -> bool:
+    code = str(code or "").strip()
+    if not code.isdigit() or len(code) not in {8, 12, 13}:
+        return False
+    data_digits = code[:-1]       
+    check_digit = int(code[-1])   
+    reversed_digits = reversed(data_digits)
+    total = sum(int(digit) * (3 if i % 2 == 0 else 1) for i, digit in enumerate(reversed_digits))
+    calculated_check = (10 - (total % 10)) % 10
+    return calculated_check == check_digit
+
+#GUESS IDENTIFIER TYPE
+def guess_identifier_type(conn, value, events):
+    code = str(value).strip().replace(" ", "")
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT id, value, regex_pattern 
+        FROM identifier_types 
+        WHERE regex_pattern IS NOT NULL AND status_id = 1
+        ORDER BY priority DESC, id ASC
+        """
+    )
+    rules = cursor.fetchall()
+    for type_id, type_value, pattern in rules:
+        try:
+            if re.match(pattern, code):
+                if len(code) in {8, 12, 13} and not is_valid_barcode(code):
+                    events.append(f"Code matched {type_value} pattern but failed checksum.")
+                    continue
+                events.append(f"Guessed identifier type: {type_value}")
+                return type_id
+        except re.error:
+            continue
+    events.append("Could not guess identifier type, leaving as NULL")
+    return None

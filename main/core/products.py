@@ -5,12 +5,14 @@
 #|==============================================================|#
 
 #SETTINGS
+import re
 from core.categories import get_or_create_cat, link_product_to_category
-from core.identifiers import generate_internal_code, get_or_create_type
+from core.identifiers import generate_internal_code, get_or_create_type, guess_identifier_type
 from core.organizations import get_or_create_org
 from core.settings import ALLOWED_FIELDS_PRD, FIELD_ALIAS, PRODUCT_UPDATE_FIELDS
 from database.adapter import PLACEHOLDER
 from utils.parsers import parse_qty_input
+from utils.textutils import boring_text
 
 #GET OR CREATE COMPLETE PRODUCT WITH DICTIONARY
 def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
@@ -22,7 +24,7 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
     if not input_dict:
         return {"error": "invalid input"}
     if not data.get("name") and not identifier_data.get("value"):
-        return {"error": "name_or_identifier_required", "events": events}
+        return {"error": "name_or_identifier_required", "events": events}   
     #IDEN CHECK
     existing_identifier = None
     if identifier_data.get("value"):
@@ -33,7 +35,7 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
                 "product_id": existing_identifier["product_id"],
                 "identifier_id": existing_identifier["id"],
                 "events": events,
-            }
+            }        
     #GET BRAND
     if data.get("brand_id"):
         data["brand_id"] = resolve_organization(conn, data["brand_id"], events)
@@ -60,7 +62,8 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
     if not data.get("name"):
         suffix = identifier_data.get("value") or "Unnamed"
         data["name"] = f"Product {suffix}"
-        #events.append("Product name generated from identifier")
+    #KEY GENERATION
+    data["key"] = boring_text(data["name"], 3)
     #INTERNAL IDENTIFIER CHECK 1
     if not identifier_data.get("value"):
         if cre_ide != 0:
@@ -86,7 +89,7 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
         link_product_to_category(conn, product_id, c1)
         if input_dict.get("c2"):
             c2 = resolve_category(conn, input_dict.get("c2"), events)
-            link_product_to_category(conn, product_id, c2)
+            link_product_to_category(conn, product_id, c2)       
     #INTERNAL IDENTIFIER CHECK 2
     identifier_id = None
     if identifier_data.get("value"):
@@ -137,7 +140,7 @@ def get_product(conn, product_id: int):
     product["identifiers"] = get_product_identifiers(conn, product_id)
     #GET CATEGORIES
     product["categories"] = get_product_categories(conn, product_id)
-    return {"result": product}
+    return {"results": product}
 
 #GET PRODUCT IDENTIFIERS
 def get_product_identifiers(conn, product_id: int):
@@ -171,16 +174,19 @@ def get_product_categories(conn, product_id: int):
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 #SEARCH PRODUCTS
-def search_products(conn, query: str, slimit: int =50):
+def search_products(conn, query: str, slimit: int = 50):
     query = str(query or "").strip()
     if not query:
         return {"results": []}
     cursor = conn.cursor()
     like_value = f"%{query}%"
+    flat_query = f"%{query.lower().replace(' ', '').replace('_', '')}%"
+    
     cursor.execute(
         f"""
         SELECT DISTINCT
             p.id,
+            p.key,
             p.name,
             p.qty_default,
             p.qty_unit,
@@ -195,13 +201,15 @@ def search_products(conn, query: str, slimit: int =50):
         LEFT JOIN identifiers i ON p.id = i.product_id
         WHERE
             p.name LIKE {PLACEHOLDER}
+            OR p.key LIKE {PLACEHOLDER}
+            OR REPLACE(p.key, '_', '') LIKE {PLACEHOLDER}  -- Haku siivotulla avaimella
             OR o.name LIKE {PLACEHOLDER}
             OR c.name LIKE {PLACEHOLDER}
             OR i.value = {PLACEHOLDER}
         ORDER BY p.id DESC
         LIMIT {slimit}
         """,
-        (like_value, like_value, like_value, query),
+        (like_value, like_value, flat_query, like_value, like_value, query),
     )
     columns = [column[0] for column in cursor.description]
     rows = cursor.fetchall()
@@ -253,13 +261,11 @@ def update_product(conn, product_id: int, input_dict: dict):
 def resolve_extra_field(conn, key_name: str, display_name: str = None):
     cursor = conn.cursor()
     key_name = key_name.strip().lower().replace(" ", "_")
-    #GET DATA
     cursor.execute(
         f"SELECT key_name FROM extra_field_definitions WHERE key_name = {PLACEHOLDER}", 
         (key_name,)
     )
     row = cursor.fetchone()
-    #CREATE DATA
     if not row:
         d_name = display_name or key_name.capitalize()
         cursor.execute(
@@ -275,10 +281,11 @@ def resolve_extra_field(conn, key_name: str, display_name: str = None):
 #
 
 def normal_product_data(input_dict, events):
-    data = {field: None for field in ALLOWED_FIELDS_PRD}
+    fields = set(ALLOWED_FIELDS_PRD) | {"key"}
+    data = {field: None for field in fields}
     for raw_field, value in (input_dict or {}).items():
         field = map_field(raw_field)
-        if field not in ALLOWED_FIELDS_PRD:
+        if field not in fields:
             if field not in {"value", "type_id", "identifier_info"}:
                 events.append(f"Field ignored: {raw_field}")
             continue
@@ -331,17 +338,7 @@ def resolve_identifier_type(conn, value, events):
     if result.get("id"):
         events.append(f"Identifier type resolved: {value}")
         return result["id"]
-    return 1
-
-def guess_identifier_type(conn, value, events):
-    code = str(value)
-    if code.isnumeric() and len(code) == 13:
-        return resolve_identifier_type(conn, "ean13", events)
-    if code.isnumeric() and len(code) == 8:
-        return resolve_identifier_type(conn, "ean8", events)
-    if code.isnumeric() and len(code) == 12:
-        return resolve_identifier_type(conn, "upc", events)
-    return resolve_identifier_type(conn, "internal", events)
+    return None
 
 def get_identifier(cursor, value):
     cursor.execute(f"SELECT id, product_id FROM identifiers WHERE value = {PLACEHOLDER}", (value,))
@@ -349,18 +346,19 @@ def get_identifier(cursor, value):
     return {"id": row[0], "product_id": row[1]} if row else None
 
 def get_existing_product(cursor, data):
-    name = data.get("name")
+    key = data.get("key")
     brand_id = data.get("brand_id") or 1
-    if not name:
+    if not key:
         return None
+    flat_key = key.replace("_", "")
     cursor.execute(
         f"""
         SELECT id FROM products
-        WHERE name = {PLACEHOLDER}
+        WHERE REPLACE(key, '_', '') = {PLACEHOLDER}
         AND COALESCE(brand_id, 1) = {PLACEHOLDER}
         AND status_id = 1
         """,
-        (name, brand_id),
+        (flat_key, brand_id),
     )
     row = cursor.fetchone()
     return row[0] if row else None
@@ -375,7 +373,6 @@ def insert_product(cursor, data):
         clean_data[key] = value
     columns = ", ".join(clean_data.keys())
     placeholders = ", ".join([PLACEHOLDER] * len(clean_data))
-
     cursor.execute(
         f"INSERT INTO products ({columns}) VALUES ({placeholders})",
         tuple(clean_data.values()),
