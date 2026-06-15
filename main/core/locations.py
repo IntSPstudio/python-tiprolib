@@ -44,7 +44,7 @@ def get_or_create_loc(conn, input: dict):
         return {"error": "Invalid location name for key generation", "events": events}
     #NAME SETTINGS
     data["name"] = clean_name
-    data["key"] = loc_key
+    data["sys_name"] = loc_key
     #ORG
     org_field = "organization_id"
     org_raw = data.get(org_field)
@@ -58,7 +58,7 @@ def get_or_create_loc(conn, input: dict):
     try:
         #CHECK IF EXISTS
         cursor.execute(
-            f"SELECT id FROM locations WHERE key = {PLACEHOLDER}", 
+            f"SELECT id FROM locations WHERE sys_name = {PLACEHOLDER}", 
             (loc_key,)
         )
         row = cursor.fetchone()

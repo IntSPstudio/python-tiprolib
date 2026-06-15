@@ -6,7 +6,7 @@
 
 #SETTINGS
 import sqlite3
-import database.adapter as adpt
+from database.adapter import PLACEHOLDER
 from utils.textutils import boring_text
 
 #GET OR CREATE
@@ -16,7 +16,7 @@ def get_or_create_cat(conn, name, description=None):
     if name:
         #TRY
         cursor = conn.cursor()
-        command = f"SELECT id FROM categories WHERE name = {adpt.PLACEHOLDER}"
+        command = f"SELECT id FROM categories WHERE name = {PLACEHOLDER}"
         cursor.execute(command, (name,))
         row = cursor.fetchone()
         #IF EXISTS
@@ -24,13 +24,13 @@ def get_or_create_cat(conn, name, description=None):
             return {"id": row[0]} 
         #CREATE
         try:
-            command = f"INSERT INTO categories (name, info) VALUES ({adpt.PLACEHOLDER}, {adpt.PLACEHOLDER})"
+            command = f"INSERT INTO categories (name, info) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
             cursor.execute(command,(name, boring_text(description,2)))
             conn.commit()
             return {"id": cursor.lastrowid}
         #ERROR
         except sqlite3.IntegrityError:
-            command = f"SELECT id FROM categories WHERE name = {adpt.PLACEHOLDER}"
+            command = f"SELECT id FROM categories WHERE name = {PLACEHOLDER}"
             cursor.execute(command, (name,))
             row = cursor.fetchone()
             if row:
@@ -44,7 +44,7 @@ def link_product_to_category(conn, product_id: int, category_id: int):
         cursor = conn.cursor()
         query = f"""
             INSERT OR IGNORE INTO route_categories (product_id, category_id)
-            VALUES ({adpt.PLACEHOLDER}, {adpt.PLACEHOLDER})
+            VALUES ({PLACEHOLDER}, {PLACEHOLDER})
         """
         try:
             cursor.execute(query, (product_id, category_id))

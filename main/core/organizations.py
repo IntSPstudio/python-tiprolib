@@ -6,7 +6,7 @@
 
 #SETTINGS
 import sqlite3
-import database.adapter as adpt
+from database.adapter import PLACEHOLDER
 from utils.textutils import boring_text
 
 #GET OR CREATE
@@ -18,7 +18,7 @@ def get_or_create_org(conn, raw_name, description=None, mode: int = 1):
         return {"error": "Invalid name"}
     #COMMAND
     cursor = conn.cursor()
-    command = f"SELECT id FROM organizations WHERE key = {adpt.PLACEHOLDER}"
+    command = f"SELECT id FROM organizations WHERE sys_name = {PLACEHOLDER}"
     cursor.execute(command, (key,))
     row = cursor.fetchone()
     #IF EXISTS
@@ -28,8 +28,8 @@ def get_or_create_org(conn, raw_name, description=None, mode: int = 1):
     if mode == 1:
         try:
             command = f"""
-                INSERT INTO organizations (key, name, info)
-                VALUES ({adpt.PLACEHOLDER}, {adpt.PLACEHOLDER}, {adpt.PLACEHOLDER})
+                INSERT INTO organizations (sys_name, name, info)
+                VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})
             """
             cursor.execute(command, (key, raw_name, boring_text(description,2)))
             conn.commit()
@@ -37,7 +37,7 @@ def get_or_create_org(conn, raw_name, description=None, mode: int = 1):
         #ERROR
         except sqlite3.IntegrityError:
             cursor.execute(
-                f"SELECT id FROM organizations WHERE key = {adpt.PLACEHOLDER}",
+                f"SELECT id FROM organizations WHERE sys_name = {PLACEHOLDER}",
                 (key,)
             )
             row = cursor.fetchone()
@@ -56,9 +56,9 @@ def get_organization_by_key(conn, org_key: str):
     cursor = conn.cursor()
     cursor.execute(
         f"""
-        SELECT id, key, name, info, status_id, created, updated 
+        SELECT id, sys_name, name, info, status_id, created, updated 
         FROM organizations 
-        WHERE key = {adpt.PLACEHOLDER}
+        WHERE sys_name = {PLACEHOLDER}
         """,
         (clean_key,)
     )

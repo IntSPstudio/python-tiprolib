@@ -15,16 +15,20 @@ def create_database(conn):
     #DATABASE TYPES
     if DATABASE_TYPE == "sqlite":
         create_sqlite(cursor)
-    conn.commit()
-    seed_defaults(conn)
+        conn.commit()
+        seed_defaults(conn)
 
 #DEFAULT VALUES TO DATABASE
 def seed_defaults(conn):
     cursor = conn.cursor()
+    #STATUS
+    insert_default(cursor, "statuses", 2, {"value": "active", "name": "Active"})
+    insert_default(cursor, "statuses", 3, {"value": "passive", "name": "Passive"})
+    insert_default(cursor, "statuses", 4, {"value": "deleted", "name": "Deleted"})
     #ORGANIZATION INI
-    insert_default(cursor, "organizations", 1, {"key": "default", "name": "Default", "info": "Default organization"})
-    insert_default(cursor, "organizations", 2, {"key": "undefined", "name": "Undefined", "info": "Undefined organization"})
-    insert_default(cursor, "organizations", 3, {"key": "cash_customer", "name": "Cash customer", "info": "Default cash customer"})
+    insert_default(cursor, "organizations", 1, {"sys_name": "default", "name": "Default", "info": "Default organization"})
+    insert_default(cursor, "organizations", 2, {"sys_name": "undefined", "name": "Undefined", "info": "Undefined organization"})
+    insert_default(cursor, "organizations", 3, {"sys_name": "cash_customer", "name": "Cash customer", "info": "Default cash customer"})
     #CATEGORY
     insert_default(cursor, "categories", 1, {"name": "default", "info": "Default category"})
     #WEBSITE USERS 1
@@ -32,16 +36,16 @@ def seed_defaults(conn):
         "username": "korhonen",
         "display_name": "Korhonen",
         "password_hash": "",
-        "role": "admin",
-        "must_change_password": 1,
+        "user_role": "admin",
+        "must_change_password": 1
     })
     #WEBSITE USERS 2
     insert_default(cursor, "web_users", 2, {
         "username": "virtanen",
         "display_name": "Virtanen",
         "password_hash": "",
-        "role": "admin",
-        "must_change_password": 1,
+        "user_role": "admin",
+        "must_change_password": 1
     })
     #IDENTIFIERS
     for type_id, value, name, regex_pattern, priority in [
@@ -56,12 +60,12 @@ def seed_defaults(conn):
     ]:
         insert_default(cursor, "identifier_types", type_id, {"value": value, "name": name, "regex_pattern": regex_pattern, "priority": priority})
     #DEPBOSIT (Aka. Pantti)
-    insert_default(cursor, "deposit_types", 1, {"code": "none","name": "No deposit","amount": "0","currency": "eur"})
+    insert_default(cursor, "deposit_types", 1, {"code": "none","name": "No deposit","amount": "0.0","currency": "eur"})
     #SEND IT
     conn.commit()
 
 #INSERT HELPER
-def insert_default(cursor, table, row_id, values):
+def insert_default(cursor, table, row_id, values): 
     #TABLE RULES
     if table not in ALLOWED_TABLES:
         print("HEI")
@@ -92,7 +96,7 @@ def create_sqlite(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS organizations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        key TEXT UNIQUE NOT NULL,
+        sys_name TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
         info TEXT,
         status_id INTEGER DEFAULT 1,
@@ -113,7 +117,7 @@ def create_sqlite(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS locations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        key TEXT UNIQUE NOT NULL,
+        sys_name TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
         organization_id INTEGER DEFAULT 1,
         street_address TEXT,
@@ -142,7 +146,7 @@ def create_sqlite(cursor):
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         brand_id INTEGER DEFAULT 1,
-        key TEXT NOT NULL,
+        sys_name TEXT NOT NULL,
         name TEXT NOT NULL,
         qty_default REAL DEFAULT 1,
         qty_unit TEXT DEFAULT 'pcs',
@@ -201,7 +205,7 @@ def create_sqlite(cursor):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS extra_field_definitions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        key_name TEXT UNIQUE NOT NULL,
+        sys_name TEXT UNIQUE NOT NULL,
         display_name TEXT NOT NULL,
         data_type TEXT DEFAULT 'text',
         status_id INTEGER DEFAULT 1,
@@ -363,7 +367,7 @@ def create_sqlite(cursor):
         username TEXT UNIQUE NOT NULL,
         display_name TEXT,
         password_hash TEXT,
-        role TEXT DEFAULT 'seller',
+        user_role TEXT DEFAULT 'seller',
         must_change_password INTEGER DEFAULT 1,
         token_secret TEXT,
         status_id INTEGER DEFAULT 1,

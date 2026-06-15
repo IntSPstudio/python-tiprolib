@@ -63,7 +63,7 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
         suffix = identifier_data.get("value") or "Unnamed"
         data["name"] = f"Product {suffix}"
     #KEY GENERATION
-    data["key"] = boring_text(data["name"], 3)
+    data["sys_name"] = boring_text(data["name"], 3)
     #INTERNAL IDENTIFIER CHECK 1
     if not identifier_data.get("value"):
         if cre_ide != 0:
@@ -89,7 +89,7 @@ def get_or_create_complete_product(conn, input_dict: dict, cre_ide: int = 0):
         link_product_to_category(conn, product_id, c1)
         if input_dict.get("c2"):
             c2 = resolve_category(conn, input_dict.get("c2"), events)
-            link_product_to_category(conn, product_id, c2)       
+            link_product_to_category(conn, product_id, c2)        
     #INTERNAL IDENTIFIER CHECK 2
     identifier_id = None
     if identifier_data.get("value"):
@@ -181,12 +181,11 @@ def search_products(conn, query: str, slimit: int = 50):
     cursor = conn.cursor()
     like_value = f"%{query}%"
     flat_query = f"%{query.lower().replace(' ', '').replace('_', '')}%"
-    
     cursor.execute(
         f"""
         SELECT DISTINCT
             p.id,
-            p.key,
+            p.sys_name,
             p.name,
             p.qty_default,
             p.qty_unit,
@@ -201,8 +200,8 @@ def search_products(conn, query: str, slimit: int = 50):
         LEFT JOIN identifiers i ON p.id = i.product_id
         WHERE
             p.name LIKE {PLACEHOLDER}
-            OR p.key LIKE {PLACEHOLDER}
-            OR REPLACE(p.key, '_', '') LIKE {PLACEHOLDER}
+            OR p.sys_name LIKE {PLACEHOLDER}
+            OR REPLACE(p.sys_name, '_', '') LIKE {PLACEHOLDER}
             OR o.name LIKE {PLACEHOLDER}
             OR c.name LIKE {PLACEHOLDER}
             OR i.value = {PLACEHOLDER}
@@ -281,7 +280,7 @@ def resolve_extra_field(conn, key_name: str, display_name: str = None):
 #
 
 def normal_product_data(input_dict, events):
-    fields = set(ALLOWED_FIELDS_PRD) | {"key"}
+    fields = set(ALLOWED_FIELDS_PRD) | {"sys_name"}
     data = {field: None for field in fields}
     for raw_field, value in (input_dict or {}).items():
         field = map_field(raw_field)
@@ -346,15 +345,15 @@ def get_identifier(cursor, value):
     return {"id": row[0], "product_id": row[1]} if row else None
 
 def get_existing_product(cursor, data):
-    key = data.get("key")
+    sys_name = data.get("sys_name")
     brand_id = data.get("brand_id") or 1
-    if not key:
+    if not sys_name:
         return None
-    flat_key = key.replace("_", "")
+    flat_key = sys_name.replace("_", "")
     cursor.execute(
         f"""
         SELECT id FROM products
-        WHERE REPLACE(key, '_', '') = {PLACEHOLDER}
+        WHERE REPLACE(sys_name, '_', '') = {PLACEHOLDER}
         AND COALESCE(brand_id, 1) = {PLACEHOLDER}
         AND status_id = 1
         """,
