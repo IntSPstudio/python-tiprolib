@@ -10,7 +10,7 @@ from utils.printer import printer, print_crud_data
 from utils.prompt import cli_screen_clear
 from enums.status import Status
 from cli.dictionary import create_dictionary_wiz
-from core.crud import get_all, get_by_id, update_status, update_record
+from core.crud import get_all, get_by_id, update_status, update_record, get_database_tables
 from core.products import get_or_create_complete_product, get_product, search_products
 from core.pricing import add_price
 from core.categories import get_or_create_cat
@@ -30,6 +30,7 @@ def run_cli(conn):
         printer("/Index")
         printer("            *** Welcome! Available commands ***")
         printer("")
+        printer(" -Com")
         printer(" -Products")
         printer(" -Identifiers")
         printer(" -Inventory")
@@ -42,9 +43,34 @@ def run_cli(conn):
         results ={}
         master = sys.argv[1]
         #
+        # COMMON FEATURES
+        #
+        if master == "main" or master == "com" or master == "common":
+            if len(sys.argv) < 3:
+                printer("")
+                printer("            *** Basics: Available commands ***")
+                printer("")
+                printer(" -Tables TABLE")
+                printer(" -Mod TABLE ID FIELD VALUE")
+            else:
+                #GET TABLE OR TABLE KEYS
+                if len(sys.argv) == 3 and sys.argv[2] == "tables":
+                    results = get_database_tables()
+                elif len(sys.argv) == 4 and sys.argv[2] == "tables" and sys.argv[3]:
+                    results = get_database_tables(str(sys.argv[3]))
+                #MODIFY
+                elif len(sys.argv) == 7 and sys.argv[2] == "mod" and sys.argv[3] and sys.argv[4] and sys.argv[5] and sys.argv[6]:
+                    # 3: Table
+                    # 4: ID
+                    # 5: Field
+                    # 6: New value
+                    data = {str(sys.argv[5]):sys.argv[6]}
+                    output = update_record(conn, str(sys.argv[3]), str(sys.argv[4]), data)
+                    results = output
+        #
         # PRODUCTS
         #
-        if master == "product" or master == "products" or master == "prd":
+        elif master == "product" or master == "products" or master == "prd":
             if len(sys.argv) < 3:
                 printer("")
                 printer("            *** Products: Available commands ***")
@@ -61,7 +87,7 @@ def run_cli(conn):
                 #GET ID
                 if len(sys.argv) == 5 and sys.argv[2] == "get" and sys.argv[3] == "id" and sys.argv[4]:
                     output = get_product(conn, sys.argv[4])
-                    results = output["result"]
+                    results = output["results"]
                 #SEARCH
                 elif len(sys.argv) == 4 and sys.argv[2] == "lookup" and sys.argv[3]:
                     output = search_products(conn, sys.argv[3])
@@ -87,7 +113,7 @@ def run_cli(conn):
         #
         # IDENTIFIERS
         #
-        if master == "identifiers" or master == "code" or master == "gtin":
+        elif master == "identifiers" or master == "code" or master == "gtin":
             if len(sys.argv) < 3:
                 printer("")
                 printer("            *** Identifiers: Available commands ***")
@@ -106,7 +132,7 @@ def run_cli(conn):
         #
         # CATEGORIES
         #
-        if master == "categories" or master == "category" or master == "cat":
+        elif master == "categories" or master == "category" or master == "cat":
             if len(sys.argv) < 3:
                 printer("")
                 printer("            *** Categories: Available commands ***")
@@ -127,7 +153,7 @@ def run_cli(conn):
         #
         # INVENTORY
         #
-        elif master == "inventory" or master == "inv":
+        elif master == "inventory" or master == "inv" or master == "stock":
             if len(sys.argv) < 3:
                 printer("")
                 printer("            *** Inventory: Available commands ***")
@@ -135,7 +161,7 @@ def run_cli(conn):
         #
         # ORGANIZATIONS
         #
-        elif master == "organizations" or master == "org":
+        elif master == "organizations" or master == "org" or master == "brands":
             if len(sys.argv) < 3:
                 printer("")
                 printer("            *** Organizations: Available commands ***")

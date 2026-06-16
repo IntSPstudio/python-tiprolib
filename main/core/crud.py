@@ -34,8 +34,8 @@ def get_all(conn, table_name: str, mode: int=0, limit: int =100, offset: int =0)
         columns = [column[0] for column in cursor.description]
         return [dict(zip(columns, row)) for row in cursor.fetchall()]
     except sqlite3.Error as e:
-        print(f"Error with {table_name}): {e}")
-        return {}
+        output = f"Error with {table_name}): {e}"
+        return {"error":output}
 
 #GET BY ID
 def get_by_id(conn, table_name, row_id):
@@ -55,8 +55,8 @@ def get_by_id(conn, table_name, row_id):
             return dict(zip(columns, row))
         return None
     except sqlite3.Error as e:
-        print(f"Error with {table_name}): {e}")
-        return None
+        output = f"Error with {table_name}): {e}"
+        return {"error":output}
     
 #GENERAL UPDATE
 def update_record(conn, table: str, row_id: int, update_data: dict) -> dict:
@@ -129,3 +129,13 @@ def update_status(conn, table_name: str, row_id: int, new_status: int):
     except sqlite3.Error as e:
         conn.rollback()
         return {"status": "error", "events": str(e)}
+    
+#GET ALLOWED TABLES AND FIELDS
+def get_database_tables(table: str=""):
+    if table:
+        if table not in ALLOWED_TABLES:
+            return {"error": f"Table '{table}' is not allowed or does not exist."}
+        #return ALLOWED_FIELDS.get(table)
+        return [key for key in ALLOWED_FIELDS.get(table)]
+    else:
+        return ALLOWED_TABLES

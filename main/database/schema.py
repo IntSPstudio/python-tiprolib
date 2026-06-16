@@ -22,7 +22,8 @@ def create_database(conn):
 def seed_defaults(conn):
     cursor = conn.cursor()
     #STATUS
-    insert_default(cursor, "statuses", 2, {"value": "active", "name": "Active"})
+    insert_default(cursor, "statuses", 1, {"value": "active", "name": "Active"})
+    insert_default(cursor, "statuses", 2, {"value": "inuse", "name": "In use"})
     insert_default(cursor, "statuses", 3, {"value": "passive", "name": "Passive"})
     insert_default(cursor, "statuses", 4, {"value": "deleted", "name": "Deleted"})
     #ORGANIZATION INI
