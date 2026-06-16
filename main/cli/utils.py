@@ -42,4 +42,26 @@ def print_click_result(result):
             return
         #BASICS
         status = result.get("status")
+        if status:
+            click.echo(f"Status: {status}")
         item_id = result.get("id")
+        if item_id:
+            click.echo(f"ID: {item_id}")
+        success = result.get("success")
+        if success:
+            click.echo(f"Succes: {success}")
+        #RESULTS
+        if result.get("results"):
+            if isinstance(result["results"], list):
+                    for i in result["results"]:
+                        printer(i)
+            elif isinstance(result["results"], dict):
+                for key, value in result["results"].items():
+                    printer(f"{key}: {value}")
+            else:
+                printer(result["results"])
+        #ADDITIONAL EVENTS
+        if "events" in result and result["events"]:
+            click.echo("\nInfo:")
+            for event in result["events"]:
+                click.echo(f"  {event}")

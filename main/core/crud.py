@@ -9,6 +9,7 @@ import sqlite3
 from enums.status import Status
 from database.adapter import PLACEHOLDER
 from core.settings import ALLOWED_TABLES, ALLOWED_FIELDS
+from utils.textutils import boring_text
 
 #GET ALL
 def get_all(conn, table_name: str, mode: int=0, limit: int =100, offset: int =0):
@@ -129,6 +130,25 @@ def update_status(conn, table_name: str, row_id: int, new_status: int):
     except sqlite3.Error as e:
         conn.rollback()
         return {"status": "error", "events": str(e)}
+
+#ADDITIONAL INFO KEYS
+def get_or_create_extra_field(conn, key_name: str, display_name: str = None, key_type: str = ""):
+    cursor = conn.cursor()
+    key_name = boring_text(key_name,3)
+    cursor.execute(
+        f"SELECT sys_name FROM extra_field_definitions WHERE sys_name = {PLACEHOLDER}", 
+        (key_name,)
+    )
+    row = cursor.fetchone()
+    if not row:
+        d_name = boring_text(display_name) or key_name
+        cursor.execute(
+            f"INSERT INTO extra_field_definitions (sys_name, display_name) VALUES ({PLACEHOLDER}, {PLACEHOLDER})",
+            (key_name, d_name)
+        )
+        conn.commit()
+        return key_name
+    return row[0]
     
 #GET ALLOWED TABLES AND FIELDS
 def get_database_tables(table: str=""):

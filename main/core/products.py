@@ -256,25 +256,6 @@ def update_product(conn, product_id: int, input_dict: dict):
     conn.commit()
     return {"status": "ok", "product_id": product_id, "events": events}
 
-#ADDITIONAL INFO KEYS
-def resolve_extra_field(conn, key_name: str, display_name: str = None):
-    cursor = conn.cursor()
-    key_name = key_name.strip().lower().replace(" ", "_")
-    cursor.execute(
-        f"SELECT key_name FROM extra_field_definitions WHERE key_name = {PLACEHOLDER}", 
-        (key_name,)
-    )
-    row = cursor.fetchone()
-    if not row:
-        d_name = display_name or key_name.capitalize()
-        cursor.execute(
-            f"INSERT INTO extra_field_definitions (key_name, display_name) VALUES ({PLACEHOLDER}, {PLACEHOLDER})",
-            (key_name, d_name)
-        )
-        conn.commit()
-        return key_name
-    return row[0]
-
 #
 # FOR SYSTEM
 #

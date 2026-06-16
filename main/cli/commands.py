@@ -10,7 +10,7 @@ from utils.printer import printer, print_crud_data
 from utils.prompt import cli_screen_clear
 from enums.status import Status
 from cli.dictionary import create_dictionary_wiz
-from core.crud import get_all, get_by_id, update_status, update_record, get_database_tables
+from core.crud import get_all, get_by_id, update_status, update_record, get_database_tables, get_or_create_extra_field
 from core.products import get_or_create_complete_product, get_product, search_products
 from core.pricing import add_price
 from core.categories import get_or_create_cat
@@ -27,7 +27,6 @@ def run_cli(conn):
     #
     if len(sys.argv) < 2:
         printer("")
-        printer("/Index")
         printer("            *** Welcome! Available commands ***")
         printer("")
         printer(" -Com")
@@ -50,8 +49,8 @@ def run_cli(conn):
                 printer("")
                 printer("            *** Basics: Available commands ***")
                 printer("")
-                printer(" -Tables TABLE")
-                printer(" -Mod TABLE ID FIELD VALUE")
+                printer(" - tables TABLE")
+                printer(" - mod TABLE ID FIELD VALUE")
             else:
                 #GET TABLE OR TABLE KEYS
                 if len(sys.argv) == 3 and sys.argv[2] == "tables":
@@ -75,10 +74,10 @@ def run_cli(conn):
                 printer("")
                 printer("            *** Products: Available commands ***")
                 printer("")
-                printer(" -Get ID/ALL")
-                printer(" -Lookup QUERY")
-                printer(" -Create")
-                printer(" -Add price ID/IDENTIFIER PRICE LOCATION")
+                printer(" - get ID/ALL")
+                printer(" - lookup QUERY")
+                printer(" - create")
+                printer(" - add price ID/IDENTIFIER PRICE LOCATION")
             else:
                 #GET ALL PRODUCTS WITHOUT ADD INFO
                 if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
@@ -118,7 +117,7 @@ def run_cli(conn):
                 printer("")
                 printer("            *** Identifiers: Available commands ***")
                 printer("")
-                printer(" -Get ALL/CODE")
+                printer(" - get ALL/CODE")
             else:
                 #GET
                 if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3]:
@@ -168,7 +167,6 @@ def run_cli(conn):
                 printer("")
                 printer(" - get all/id")
                 printer(" - create NAME INFO")
-                printer(" - status STATE ID ")
                 printer("")
             else:
                 #GET ALL
@@ -223,6 +221,40 @@ def run_cli(conn):
                     data = {sys.argv[4] : sys.argv[5]}
                     output = update_record(conn, "locations", sys.argv[3], data)
                     results = output
+        #
+        # ADDITIONAL INFO
+        #
+        elif master == "extra" or master == "extras":
+            if len(sys.argv) < 3:
+                printer("")
+                printer("            *** Additional data: Available commands ***")
+                printer("")
+                printer(" - get ALL")
+                printer(" - create KEY NAME")
+                printer("")
+            else:
+                #GET ALL OR ONE
+                if len(sys.argv) == 4  and sys.argv[2] == "get" and sys.argv[3] == "all":
+                    output = get_all(conn, "extra_field_definitions")
+                    results = print_crud_data(output)
+                #ADD NEW KEY
+                elif len(sys.argv) == 4  and sys.argv[2] == "create" and sys.argv[3]:
+                    output = get_or_create_extra_field(conn, str(sys.argv[3]))
+                    results = output
+                elif len(sys.argv) == 5  and sys.argv[2] == "create" and sys.argv[3] and sys.argv[4]:
+                    output = get_or_create_extra_field(conn, str(sys.argv[3]), str(sys.argv[4]))
+                    results = output
+        #
+        # JOURNAL
+        #
+        elif master == "journal" or master == "diary" or master == "jrn":
+            if len(sys.argv) < 3:
+                printer("")
+                printer("            *** Journal: Available commands ***")
+                printer("")
+                printer(" - all")
+                printer(" - add")
+                printer("")
         #
         # OUTPUT
         #
